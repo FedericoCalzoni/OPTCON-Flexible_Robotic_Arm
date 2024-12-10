@@ -1,7 +1,6 @@
 import numpy as np
 from dynamics import compute_gravity
 
-
 def newton_method(z_0, jacobian_function, step_size=1e-5, iterations=1000):
     z = z_0
     tolerance = 1e-5
@@ -11,7 +10,7 @@ def newton_method(z_0, jacobian_function, step_size=1e-5, iterations=1000):
         try:
             # TODO: verify if we need the transpose and if we
             # have the gravity upside down (change the sign)
-            delta_z = - np.linalg.inv(J_z) @ r_z
+            delta_z = - step_size * np.linalg.inv(J_z) @ r_z
             z = z + delta_z
             print(f"Iteration: {i}, z: {z}")
         except np.linalg.LinAlgError:

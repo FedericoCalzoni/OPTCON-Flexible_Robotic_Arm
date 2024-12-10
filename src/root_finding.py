@@ -1,18 +1,6 @@
 import numpy as np
 from newton_method import newton_method
-
-# Dynamics parameters
-M1 = 2
-M2 = 2
-L1 = 1.5
-L2 = 1.5
-R1 = 0.75
-R2 = 0.75
-I1 = 1.5
-I2 = 1.5
-G = 9.81
-F1 = 0.1
-F2 = 0.1
+from parameters import *
 
 # Jacobian of G
 def jacobian_G(theta1, theta2):

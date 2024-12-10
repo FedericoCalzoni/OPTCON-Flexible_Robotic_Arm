@@ -1,15 +1,7 @@
 from dynamics import dynamics as dyn
 from visualizer import animate_double_pendulum as anim
 import numpy as np
-
-# Pendulum lengths
-L1 = 1.5
-L2 = 1.5
-
-# Simulation parameters
-t_i = 0
-t_f = 10
-dt = 1e-4
+from parameters import *
 
 def main():
     """

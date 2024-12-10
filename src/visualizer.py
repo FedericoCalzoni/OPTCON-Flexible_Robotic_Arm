@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from parameters import *
 
 def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
     """
