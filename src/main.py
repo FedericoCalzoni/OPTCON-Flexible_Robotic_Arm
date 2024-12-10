@@ -16,8 +16,8 @@ def main():
     Main function to simulate the dynamics and visualize the results.
     """
     # Initial state and input
-    x_0 = np.array([[0], [0], [np.pi/6], [0]])  # Initial state (dtheta1, dtheta2, theta1, theta2)
-    u_0 = np.array([[50], [0], [0], [0]])  # Input (tau1, tau2 , - ,  - )
+    x_0 = np.array([[0], [0], [np.pi/6], [np.pi]])  # Initial state (dtheta1, dtheta2, theta1, theta2)
+    u_0 = np.array([[10], [0], [0], [0]])  # Input (tau1, tau2 , - ,  - )
 
     time_intervals = int((t_f - t_i) / dt + 1)
 
