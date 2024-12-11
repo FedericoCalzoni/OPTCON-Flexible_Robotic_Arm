@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from parameters import *
 
 def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
     """
@@ -29,8 +28,8 @@ def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
     positions = positions[::frame_skip]
     
     # Constants for the animation
-    trace_length1 = 100  # Maximum length of the first hinge trace
-    trace_length2 = 2*trace_length1  # Maximum length of the pendulum trace
+    trace_length1 = 150  # Maximum length of the first hinge trace
+    trace_length2 = 200  # Maximum length of the pendulum trace
     alpha_min, alpha_max = 0.1, 1  # Fading alpha range
 
     # Precompute alphas for fading traces
@@ -45,7 +44,7 @@ def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
 
     # Plot objects
     line, = ax.plot([], [], 'o-', lw=2)  # Pendulum rods
-    trace1 = ax.scatter([], [], c=[], s=2, cmap='Purples', vmin=0, vmax=1)  # Trace of the first hinge
+    trace1 = ax.scatter([], [], c=[], s=2, cmap='YlGn', vmin=0, vmax=1)  # Trace of the first hinge
     trace2 = ax.scatter([], [], c=[], s=2, cmap='Reds', vmin=0, vmax=1)  # Trace of the pendulum
 
 

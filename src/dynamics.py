@@ -1,5 +1,5 @@
 import numpy as np
-from parameters import *
+from parameters import M1, M2, L1, R1, R2, I1, I2, G, F1, F2
 
 F = np.array([[F1, 0],
               [ 0 ,F2]])
@@ -29,6 +29,15 @@ def compute_gravity(theta1, theta2):
     g1 = G * (M1 * R1 + M2 * L1) * sin_theta1 + G * M2 * R2 * sin_theta1_theta2
     g2 = G * M2 * R2 * sin_theta1_theta2
     return np.array([[g1], [g2]])
+
+def jacobian(theta1, theta2):
+    JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)
+    JG_12 = G*M2*R2*np.cos(theta1 + theta2)
+    JG_21 = JG_12
+    JG_22 = JG_12
+    JG_13 = -1
+    JG_23 = 0
+    return np.array([[JG_11 , JG_12, JG_13], [JG_21 , JG_22, JG_23]])
 
 # TODO: maybe it is not necessary to compute it
 def compute_jacobian(dtheta1, dtheta2, theta1, theta2, tau1):
