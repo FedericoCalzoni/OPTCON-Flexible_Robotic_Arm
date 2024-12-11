@@ -15,4 +15,3 @@
 - [ ] implementare una funzione che calcoal il gradiente della funzione di costo (use sympy)
     - [ ] nell aggiornamento della funzione di costo non utilizzare lo shooting method ma il closed loop update.
 - [ ] usare soluzione (affine) LQR per calcolare la direzione di discesa.
-FEDE SEI BELLO
