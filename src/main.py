@@ -5,7 +5,7 @@ import numpy as np
 from parameters import L1, L2, t_i, t_f, dt
 from newton_method import newton_method
 from matplotlib import pyplot as plt
-import Cost
+import cost
 
 def main():
     """
@@ -74,7 +74,7 @@ def main():
         x_trajectory[:, i] = x_0.flatten()
         u_trajectory[:, i] = u_0.flatten()
 
-    J = Cost.J_Function(x_trajectory, u_trajectory, x_ref, u_ref)
+    J = cost.J_Function(x_trajectory, u_trajectory, x_ref, u_ref)
     print(time_intervals)
     print(J)
     #########

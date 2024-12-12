@@ -28,14 +28,18 @@ def J_Function(x_trajectory, u_trajectory, x_reference, u_reference):
     T = x_trajectory.shape[1]
 
     for i in range (T - 2):
-        J = J + StageCost(x_trajectory[:, i], x_reference[:, i], u_trajectory[:, i], u_reference[:, i])
+        J = J + StageCost(x_trajectory[:, i], 
+                          x_reference[:, i], 
+                          u_trajectory[:, i], 
+                          u_reference[:, i])
 
     J = J + TerminalCost(x_trajectory[:, T-1], x_trajectory[:, T-1])
     return J
 
 def StageCost(x_stage, x_reference, u_stage, u_reference):
     
-    Jt = (1/2)*(Tr(x_stage - x_reference))@ Qt @(x_stage - x_reference) + (1/2)*(Tr(u_stage - u_reference) @ Rt @ (u_stage - u_reference))
+    Jt = (1/2)*(Tr(x_stage - x_reference))@ Qt @(x_stage - x_reference) + \
+        (1/2)*(Tr(u_stage - u_reference) @ Rt @ (u_stage - u_reference))
     return Jt                                                                              
                                                                                 
 def TerminalCost(xT, xT_reference):
@@ -47,7 +51,7 @@ def Grad1J(x_trajectory, x_reference):
     Computes the gradient with respect to x of the cost function.
     
     Args:
-        x_trajectory (numpy.ndarray): State trajectory vecto of shape (4,)
+        x_trajectory (numpy.ndarray): State trajectory vector of shape (4,)
         x_reference (numpy.ndarray): Reference state trajectory vector of shape (4,)
 
     Returns:
@@ -60,7 +64,7 @@ def Grad2J(u_trajectory, u_reference):
     Computes the gradient with respect to u of the cost function.
     
     Args:
-        u_trajectory (numpy.ndarray): Input trajectory vecto of shape (4,)
+        u_trajectory (numpy.ndarray): Input trajectory vector of shape (4,)
         u_reference (numpy.ndarray): Reference Input trajectory vector of shape (4,)
 
     Returns:

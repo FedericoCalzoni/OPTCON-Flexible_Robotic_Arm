@@ -21,3 +21,7 @@ dt = 1e-4
 Qt = np.diag([1, 1, 1, 1])
 Rt = np.diag([1, 0, 0, 0])
 QT = np.diag([10000, 10000, 10000, 10000])
+
+# Armijo parameters
+c = 0.5
+beta = 0.7
