@@ -40,7 +40,7 @@ def jacobian(theta1, theta2):
     return np.array([[JG_11 , JG_12, JG_13], [JG_21 , JG_22, JG_23]])
 
 # TODO: maybe it is not necessary to compute it
-def compute_jacobian(dtheta1, dtheta2, theta1, theta2, tau1):
+def jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, tau1):
     sin_theta1=np.sin(theta1)
     cos_theta1=np.cos(theta1)
     sin_theta2=np.sin(theta2)
@@ -111,7 +111,42 @@ def compute_jacobian(dtheta1, dtheta2, theta1, theta2, tau1):
                                                                                     + M2*R2**2))/(I1*I2 + I1*M2*R2**2 + I2*L1**2*M2 \
                                                                                         + I2*M1*R1**2 + L1**2*M2**2*R2**2*sin_theta2**2 \
                                                                                             + M1*M2*R1**2*R2**2)
-    return np.array([[j11, j12, j13, j14], [j21, j22, j23, j24]])
+    j31=0
+    j32=0
+    j33=0
+    j34=0
+    j41=0
+    j42=0
+    j43=0
+    j44=0
+    return np.array([[j11, j12, j13, j14], [j21, j22, j23, j24], [j31, j32, j33, j34], [j41, j42, j43, j44]])
+
+def jacobian_x_dot_wrt_u(theta2):
+    sin_theta2=np.sin(theta2)
+    cos_theta2=np.cos(theta2)
+    j11=(I2 + M2*R2**2)/(I1*I2 + I1*M2*R2**2 + I2*L1**2*M2 \
+        + I2*M1*R1**2 + L1**2*M2**2*R2**2*sin_theta2**2 + M1*M2*R1**2*R2**2)
+    j12=(-I2 - L1*M2*R2*cos_theta2 - M2*R2**2)/(I1*I2 \
+        + I1*M2*R2**2 + I2*L1**2*M2 + I2*M1*R1**2 \
+            + L1**2*M2**2*R2**2*sin_theta2**2 + M1*M2*R1**2*R2**2)
+    j13=0
+    j14=0
+    j21=j12
+    j22=(I1 + I2 + L1**2*M2 + 2*L1*M2*R2*cos_theta2 \
+        + M1*R1**2 + M2*R2**2)/(I1*I2 + I1*M2*R2**2 \
+            + I2*L1**2*M2 + I2*M1*R1**2 + L1**2*M2**2*R2**2*sin_theta2**2 \
+                + M1*M2*R1**2*R2**2)
+    j23=0
+    j24=0
+    j31=0
+    j32=0
+    j33=0
+    j34=0
+    j41=0
+    j42=0
+    j43=0
+    j44=0
+    return np.array([[j11, j12, j13, j14], [j21, j22, j23, j24], [j31, j32, j33, j34], [j41, j42, j43, j44]])
 
 def dynamics(x, u, dt=1e-3):
 
@@ -176,7 +211,7 @@ def dynamics(x, u, dt=1e-3):
     x_new = x + dt * x_dot
     
     # compute jacobi matrix
-    jacobian_x_dot = compute_jacobian(dtheta1, dtheta2, theta1, theta2, u[0].item())
+    jacobian_x_dot = jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
     
     # print("jacobian_x_dot:\n", jacobian_x_dot)
     

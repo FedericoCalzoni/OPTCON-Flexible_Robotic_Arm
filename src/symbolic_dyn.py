@@ -2,7 +2,7 @@ import sympy as sp
 
 # Symbolic variables
 M1, M2, L1, L2, R1, R2, I1, I2, G, F1, F2 = sp.symbols('M1 M2 L1 L2 R1 R2 I1 I2 G F1 F2')
-tau1 = sp.symbols('tau1')
+tau1, tau2, tau3, tau4= sp.symbols('tau1 tau2 tau3 tau4')
 theta1, theta2, dtheta1, dtheta2 = sp.symbols('theta1 theta2 dtheta1 dtheta2')
 
 def compute_inertia_matrix(theta2):
@@ -63,13 +63,17 @@ G_ext = sp.BlockMatrix([[G],
 G_ext = G_ext.as_explicit()
 
 x = sp.Matrix([[dtheta1], [dtheta2], [theta1], [theta2]])
-u = sp.Matrix([[tau1],[0],[0],[0]])
+u = sp.Matrix([[tau1],[tau2],[tau3],[tau4]])
 
-x_dot = A*x + B*u - M_inv_ext*(C_ext + G_ext)
+x_dot = A*x + B*u - M_inv_ext*(C_ext + G_ext) # x_dot = f(x, u) 
 x_dot = sp.simplify(x_dot)
 
-gradient_G = G.jacobian(x)
-jacobian_x_dot = x_dot.jacobian(x)
+jacobian_G = G.jacobian(x)
+jacobian_x_dot_wrt_x = x_dot.jacobian(x)
+
+jacobian_x_dot_wrt_u = x_dot.jacobian(u)
+
+
 
 print("Matrix M:")
 sp.pprint(M)
@@ -100,13 +104,18 @@ sp.pprint(x_dot)
 
 
 print("\nGradient matrix of G with respect to x:")
-for i in range(gradient_G.shape[0]):
-    for j in range(gradient_G.shape[1]):
-        print(f"Gradient element ({i+1}, {j+1}) = {gradient_G[i, j]}")
+for i in range(jacobian_G.shape[0]):
+    for j in range(jacobian_G.shape[1]):
+        print(f"Gradient element ({i+1}, {j+1}) = {jacobian_G[i, j]}")
 
 print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to x:")
-for i in range(jacobian_x_dot.shape[0]):
-    for j in range(jacobian_x_dot.shape[1]):
-        print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot[i, j]}")
+for i in range(jacobian_x_dot_wrt_x.shape[0]):
+    for j in range(jacobian_x_dot_wrt_x.shape[1]):
+        print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot_wrt_x[i, j]}")
+        
+print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to u:")
+for i in range(jacobian_x_dot_wrt_u.shape[0]):
+    for j in range(jacobian_x_dot_wrt_u.shape[1]):
+        print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot_wrt_u[i, j]}")
         
 
