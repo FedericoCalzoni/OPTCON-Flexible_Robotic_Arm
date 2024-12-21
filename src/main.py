@@ -1,11 +1,12 @@
-from dynamics import dynamics as dyn
+import dynamics as dyn
 from dynamics import jacobian
 from visualizer import animate_double_pendulum as anim
 import numpy as np
 from parameters import L1, L2, t_i, t_f, dt
 from newton_method import newton_method
-from matplotlib import pyplot as plt
 import cost
+from gradient_method import gradient_method
+from reference_trajectory import generate_trajectory
 
 def main():
     """
@@ -14,6 +15,8 @@ def main():
     # Initial state and input
     x_0 = np.array([[0], [0], [np.pi/6], [np.pi]])  # Initial state (dtheta1, dtheta2, theta1, theta2)
     u_0 = np.array([[10], [0], [0], [0]])  # Input (tau1, tau2 , - ,  - )
+    x_size = 4
+    u_size = 4
     
     # Find equilibria
     
@@ -39,7 +42,7 @@ def main():
     x_history = [x_0]
     print("Computing dynamics...")
     for i in range(time_intervals):
-        x_history.append(dyn(x_history[i], u_0, dt))
+        x_history.append(dyn.dynamics(x_history[i], u_0, dt)[0])
     
     # x_e = np.zeros((time_intervals, 4))
     # for i in range(1, time_intervals):
@@ -78,6 +81,22 @@ def main():
     print(time_intervals)
     print(J)
     #########
+    
+    # compute reference trajectory
+    tf = 10
+    x_eq1 = np.array([0.0, 0.0, 0.0, 0.0])
+    x_eq2 = np.array([0.0, 0.0, 10.0, 5.0])
+    k_eq = 2.0
+    
+    x_reference, u_reference = generate_trajectory(tf, x_eq1, x_eq2, k_eq)
+    
+    T = x_reference.shape[1]
+    
+    # Compute optimal trajectory
+    # Initial guess
+    x_init = np.zeros((x_size, T))
+    u_init = np.zeros((u_size, T))
+    x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
 
 
 

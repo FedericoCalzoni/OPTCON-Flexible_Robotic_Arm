@@ -3,7 +3,7 @@ import cost
 import dynamics as dyn
 from parameters import c, beta
 
-def select_step_size(x_init, u_init, x_reference, u_reference, step_size_0, J, max_iterations=500):
+def select_step_size(x_init, u_init, x_reference, u_reference, J, step_size_0=0.01, max_iterations=500):
 
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
@@ -25,10 +25,10 @@ def select_step_size(x_init, u_init, x_reference, u_reference, step_size_0, J, m
         u_temp[:,0] = u_init.flatten()
         
         for j in range(horizon):
-            delta_u = - cost.Grad2J(u_temp[:,j], u_reference[:,j])
+            delta_u = - cost.grad2_J(u_temp[:,j], u_reference[:,j])
             u_temp[:,j] = u_temp[:,j] + step_size * delta_u
             x_temp[:,j+1] = dyn.dynamics(x_temp[:,j].reshape(-1, 1), 
-                                         u_temp[:,j].reshape(-1, 1)).flatten()
+                                         u_temp[:,j].reshape(-1, 1))[0].flatten()
         
         J_temp = cost.J_Function(x_temp, u_temp, x_reference, u_reference)
         

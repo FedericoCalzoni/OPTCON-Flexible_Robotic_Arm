@@ -210,9 +210,9 @@ def dynamics(x, u, dt=1e-3):
     
     x_new = x + dt * x_dot
     
-    # compute jacobi matrix
-    jacobian_x_dot = jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
+    dfx = jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
+    dfu = jacobian_x_dot_wrt_u(theta2)
     
     # print("jacobian_x_dot:\n", jacobian_x_dot)
     
-    return x_new
+    return x_new, dfx, dfu

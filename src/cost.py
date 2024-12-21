@@ -28,25 +28,24 @@ def J_Function(x_trajectory, u_trajectory, x_reference, u_reference):
     T = x_trajectory.shape[1]
 
     for i in range (T - 2):
-        J = J + StageCost(x_trajectory[:, i], 
+        J = J + stage_cost(x_trajectory[:, i], 
                           x_reference[:, i], 
                           u_trajectory[:, i], 
                           u_reference[:, i])
 
-    J = J + TerminalCost(x_trajectory[:, T-1], x_trajectory[:, T-1])
+    J = J + terminal_cost(x_trajectory[:, T-1], x_trajectory[:, T-1])
     return J
 
-def StageCost(x_stage, x_reference, u_stage, u_reference):
-    
-    Jt = (1/2)*(Tr(x_stage - x_reference))@ Qt @(x_stage - x_reference) + \
+def stage_cost(x_stage, x_reference, u_stage, u_reference):
+    J_t = (1/2)*(Tr(x_stage - x_reference))@ Qt @(x_stage - x_reference) + \
         (1/2)*(Tr(u_stage - u_reference) @ Rt @ (u_stage - u_reference))
-    return Jt                                                                              
+    return J_t                                                                              
                                                                                 
-def TerminalCost(xT, xT_reference):
-    JT = (1/2)*(Tr(xT - xT_reference))@ QT @(xT - xT_reference)
-    return JT
+def terminal_cost(xT, xT_reference):
+    J_T = (1/2)*(Tr(xT - xT_reference))@ QT @(xT - xT_reference)
+    return J_T
 
-def Grad1J(x_trajectory, x_reference):
+def grad1_J(x_trajectory, x_reference):
     """
     Computes the gradient with respect to x of the cost function.
     
@@ -59,7 +58,7 @@ def Grad1J(x_trajectory, x_reference):
     """
     return Qt @ (x_trajectory - x_reference)
 
-def Grad2J(u_trajectory, u_reference):
+def grad2_J(u_trajectory, u_reference):
     """
     Computes the gradient with respect to u of the cost function.
     
@@ -71,3 +70,17 @@ def Grad2J(u_trajectory, u_reference):
         float: The gradient of the cost function computed in (u_trajectory - u_reference)
     """
     return Rt @ (u_trajectory - u_reference)
+
+def grad_terminal_cost(xT, xT_reference):
+    """
+    Computes the gradient with respect to x of the terminal cost function.
+    
+    Args:
+        xT (numpy.ndarray): State trajectory vector of shape (4,)
+        xT_reference (numpy.ndarray): Reference state trajectory vector of shape (4,)
+
+    Returns:
+        float: The gradient of the cost function computed in (xT - xT_reference)
+    """
+    return QT @ (xT - xT_reference)
+
