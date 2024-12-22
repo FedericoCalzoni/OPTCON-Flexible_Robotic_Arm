@@ -3,7 +3,7 @@ import cost
 import dynamics as dyn
 from parameters import c, beta
 
-def select_step_size(x_init, u_init, x_reference, u_reference, J, step_size_0=0.01, max_iterations=500):
+def select_step_size(x_init, u_init, x_reference, u_reference, J, step_size_0=0.01, max_iterations=100):
 
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
@@ -46,19 +46,3 @@ def select_step_size(x_init, u_init, x_reference, u_reference, J, step_size_0=0.
         print('step_size solution not found after {} iterations'.format(horizon))
             
     return step_size
-
-
-# # test the function
-# np.set_printoptions(linewidth = 150)
-# x_init = np.array([[0], [0], [np.pi/6], [np.pi]])
-# u_init = np.array([[10], [0], [0], [0]])
-# x_reference = np.zeros((4,1000))
-# u_reference = np.zeros((4,1000))
-# for i in range(1000):
-#     x_reference[:,i] = np.array([[0], [0], [np.pi], [np.pi/3]]).flatten()
-#     u_reference[:,i] = np.array([[10], [0], [0], [0]]).flatten()
-# step_size_0 = 0.1
-# J = cost.J_Function(x_init, u_init, x_reference, u_reference)
-# max_iterations = 5
-# step_size = select_step_size(x_init, u_init, x_reference, u_reference, step_size_0, J, max_iterations)
-# print(step_size)

@@ -71,6 +71,8 @@ x_dot = sp.simplify(x_dot)
 jacobian_G = G.jacobian(x)
 jacobian_x_dot_wrt_x = x_dot.jacobian(x)
 
+hessians = [sp.hessian(f, x) for f in x_dot]
+
 jacobian_x_dot_wrt_u = x_dot.jacobian(u)
 
 
@@ -117,5 +119,11 @@ print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to u:")
 for i in range(jacobian_x_dot_wrt_u.shape[0]):
     for j in range(jacobian_x_dot_wrt_u.shape[1]):
         print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot_wrt_u[i, j]}")
+        
+print("\n\n\n\n\n\nHessians of x_dot:")
+for i in range(len(hessians)):
+    for j in range(hessians[i].shape[0]):
+        for k in range(hessians[i].shape[1]):
+            print(f"Hessian element ({i+1}, {j+1}, {k+1}) = {hessians[i][j, k]}")
         
 

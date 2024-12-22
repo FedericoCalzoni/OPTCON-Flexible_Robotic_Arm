@@ -84,3 +84,39 @@ def grad_terminal_cost(xT, xT_reference):
     """
     return QT @ (xT - xT_reference)
 
+def hessian1_J(Qt):
+    """
+    Computes the Hessian of the cost function with respect to x.
+    
+    Args:
+        Qt (numpy.ndarray): Weight matrix of shape (4, 4).
+
+    Returns:
+        numpy.ndarray: The Hessian of the cost function, which is equal to Qt.
+    """
+    return Qt
+
+def hessian2_J(Rt):
+    """
+    Computes the Hessian of the cost function with respect to u.
+    
+    Args:
+        Rt (numpy.ndarray): Weight matrix of shape (4, 4).
+
+    Returns:
+        numpy.ndarray: The Hessian of the cost function, which is equal to Rt.
+    """
+    return Rt
+
+def hessian_12_J(x_trajectory, u_trajectory):
+    """
+    Computes the mixed second derivative of the cost function (derivative of grad1 with respect to u).
+    
+    Args:
+        x_trajectory (numpy.ndarray): State trajectory vector of shape (4,)
+        u_trajectory (numpy.ndarray): Input trajectory vector of shape (4,)
+
+    Returns:
+        numpy.ndarray: The mixed Hessian, which is a zero matrix.
+    """
+    return np.zeros((x_trajectory.shape[0], u_trajectory.shape[0]))
