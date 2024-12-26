@@ -1,40 +1,48 @@
 import numpy as np
 import dynamics as dyn
+import cost
+import parameters as params
 
+def solve_ltv_LQR(A_trajectory, B_trajectory, Q_trajectory, R_trajectory, S_trajectory, x0_trajectory, q_trajectory, r_trajectory):
+    
+    cache = None
+    cache_inv = None
 
-def solve_ltv_LQR(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT):
-	
+    QT = Q_trajectory[:,:,-1]
+    T = x0_trajectory.shape[1]
+    qT = q_trajectory[:,-1]
+    
     try:
         # check if matrix is (.. x .. x T) - 3 dimensional array 
-        x_size, lA = A0.shape[1:]
+        x_size, lA = A_trajectory.shape[1:]
     except ValueError:
         # if not 3 dimensional array, make it (.. x .. x 1)
-        A0 = A0[:,:,None]
-        x_size, lA = A0.shape[1:]
+        A_trajectory = A_trajectory[:,:,None]
+        x_size, lA = A_trajectory.shape[1:]
 
     try:  
-        u_size, lB = B0.shape[1:]
+        u_size, lB = B_trajectory.shape[1:]
     except ValueError:
-        B0 = B0[:,:,None]
-        u_size, lB = B0.shape[1:]
+        B_trajectory = B_trajectory[:,:,None]
+        u_size, lB = B_trajectory.shape[1:]
 
     try:
-        nQ, lQ = Q0.shape[1:]
+        nQ, lQ = Q_trajectory.shape[1:]
     except ValueError:
-        Q0 = Q0[:,:,None]
-        nQ, lQ = Q0.shape[1:]
+        Q_trajectory = Q_trajectory[:,:,None]
+        nQ, lQ = Q_trajectory.shape[1:]
 
     try:
-        nR, lR = R0.shape[1:]
+        nR, lR = R_trajectory.shape[1:]
     except ValueError:
-        R0 = R0[:,:,None]
-        nR, lR = R0.shape[1:]
+        R_trajectory = R_trajectory[:,:,None]
+        nR, lR = R_trajectory.shape[1:]
 
     try:
-        nSi, nSs, lS = S0.shape
+        nSi, nSs, lS = S_trajectory.shape
     except ValueError:
-        S0 = S0[:,:,None]
-        nSi, nSs, lS = S0.shape
+        S_trajectory = S_trajectory[:,:,None]
+        nSi, nSs, lS = S_trajectory.shape
 
     # Check dimensions consistency -- safety
     if nQ != x_size:
@@ -51,58 +59,48 @@ def solve_ltv_LQR(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT):
         exit()
 
 
-    if lA < T:
-        A0 = A0.repeat(T, axis=2)
-    if lB < T:
-        B0 = B0.repeat(T, axis=2)
-    if lQ < T:
-        Q0 = Q0.repeat(T, axis=2)
-    if lR < T:
-        R0 = R0.repeat(T, axis=2)
-    if lS < T:
-        S0 = S0.repeat(T, axis=2)
-
-
     # Check for affine terms
 
-    if q0 is not None or r0 is not None or qT is not None:
+    if q_trajectory is not None or r_trajectory is not None or qT is not None:
         print("Augmented term!")
 
-    K_star = np.zeros((u_size, x_size, T))
-    sigma_star = np.zeros((u_size, T))
     P = np.zeros((x_size, x_size, T))
     p = np.zeros((x_size, T))
-
-    Q = Q0
-    R = R0
-    S = S0
-    
-    q = q0
-    r = r0
-
-    A = A0
-    B = B0
-
-    delta_x_star = np.zeros((x_size, T))
+    K_star = np.zeros((u_size, x_size, T))
+    sigma_star = np.zeros((u_size, T))
     delta_u_star = np.zeros((u_size, T))
-
-    delta_x_star[:,0] = x0.flatten()
+    delta_x_star = np.zeros((x_size, T))
     
     P[:,:,-1] = QT
     p[:,-1] = qT
-  
+    delta_x_star[:,0] = x0_trajectory[:,0]
+    
     # Solve Riccati equation
     for t in reversed(range(T-1)):
-        Qt = Q[:,:,t]
-        qt = q[:,t][:,None]
-        Rt = R[:,:,t]
-        rt = r[:,t][:,None]
-        At = A[:,:,t]
-        Bt = B[:,:,t]
-        St = S[:,:,t]
+        Qt = Q_trajectory[:,:,t]
+        qt = q_trajectory[:,t][:,None]
+        Rt = R_trajectory[:,:,t]
+        rt = r_trajectory[:,t][:,None]
+        At = A_trajectory[:,:,t]
+        Bt = B_trajectory[:,:,t]
+        St = S_trajectory[:,:,t]
         Pt_plus_1 = P[:,:,t+1]
         pt_plus_1 = p[:, t+1][:,None]
 
+        # print("\n\n\n")
+        # print("Rt: ", Rt)
+        # print("Bt: ", Bt)
+        # print("Pt_plus_1: ", Pt_plus_1)
+        
+        # to_invert = Rt + Bt.T @ Pt_plus_1 @ Bt
+        
+        # if np.all(to_invert == cache):
+        #     Mt_inv = cache_inv
+        # else: 
+        #     Mt_inv = np.linalg.inv(to_invert)
+        #     cache = to_invert
+        #     cache_inv = Mt_inv
+        
         Mt_inv = np.linalg.inv(Rt + Bt.T @ Pt_plus_1 @ Bt)
         mt = rt + Bt.T @ pt_plus_1
         
@@ -116,18 +114,23 @@ def solve_ltv_LQR(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT):
     # Evaluate KK
     
     for t in range(T-1):
-        Qt = Q[:,:,t]
-        qt = q[:,t][:,None]
-        Rt = R[:,:,t]
-        rt = r[:,t][:,None]
-        At = A[:,:,t]
-        Bt = B[:,:,t]
-        St = S[:,:,t]
+        Rt = R_trajectory[:,:,t]
+        rt = r_trajectory[:,t][:,None]
+        At = A_trajectory[:,:,t]
+        Bt = B_trajectory[:,:,t]
+        St = S_trajectory[:,:,t]
 
         Pt_plus_1 = P[:,:,t+1]
         pt_plus_1 = p[:,t+1][:,None]
-
-        # Check positive definiteness
+        
+        # to_invert = Rt + Bt.T @ Pt_plus_1 @ Bt
+        
+        # if np.all(to_invert == cache):
+        #     Mt_inv = cache_inv
+        # else:
+        #     Mt_inv = np.linalg.inv(to_invert)
+        #     cache = to_invert
+        #     cache_inv = Mt_inv
 
         Mt_inv = np.linalg.inv(Rt + Bt.T @ Pt_plus_1 @ Bt)
         mt = rt + Bt.T @ pt_plus_1
@@ -140,57 +143,106 @@ def solve_ltv_LQR(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT):
         sigma_star[:,t] = sigma_t.squeeze()
 
     for t in range(T-1):
+        At = A_trajectory[:,:,t]
+        Bt = B_trajectory[:,:,t]
+        
         # Trajectory
-
         delta_u_star[:, t] = K_star[:,:,t] @ delta_x_star[:, t] + sigma_star[:,t]
-        delta_x_star[:,t+1] = A[:,:,t] @ delta_x_star[:,t] + B[:,:,t] @ delta_u_star[:, t]
+        delta_x_star[:,t+1] = At @ delta_x_star[:,t] + Bt @ delta_u_star[:, t]
 
     return K_star, sigma_star, delta_x_star
 
 
-def compute_LQR_trajectory(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT, u0, step_size = 0.1, max_iter = 100):
+def compute_LQR_trajectory(A0, B0, x0_trajectory, u0_trajectory, x_reference, u_reference, step_size = 0.1, max_iter = 100):
     
-    u = np.zeros((u0.shape[0], T, max_iter))
-    x = np.zeros((x0.shape[0], T, max_iter))
+    x_size = x0_trajectory.shape[0]
+    u_size = u0_trajectory.shape[0]
+
+    T = x0_trajectory.shape[1]
     
-    print(f'Size u: {u.shape}, Size x: {x.shape}')
+    # u_temp_trajectory[:,:,0] = u0_trajectory
+    # x_temp_trajectory[:,:,0] = x0_trajectory
+    # x_temp_trajectory[:,:,1] = x0_trajectory   
+    x_temp_trajectory = x0_trajectory[:, :, np.newaxis] 
+    x_temp_trajectory = np.repeat(x_temp_trajectory, max_iter+1, axis=2)
+    u_temp_trajectory = u0_trajectory[:, :, np.newaxis] 
+    u_temp_trajectory = np.repeat(u_temp_trajectory, max_iter+1, axis=2)
+
+    A_trajectory = np.zeros((A0.shape[0], A0.shape[1], T))
+    B_trajectory = np.zeros((B0.shape[0], B0.shape[1], T))
+    Q_trajectory = np.zeros((x_size, x_size, T))
+    R_trajectory = np.zeros((u_size, u_size, T))
+    S_trajectory = np.zeros((u_size, x_size, T))
+    q_trajectory = np.zeros((x_size, T))
+    r_trajectory = np.zeros((u_size, T))
     
-    u[:,:,0] = u0
-    x[:,:,1] = x0
-        
-    for k in range(max_iter-1):
-        
-        K, sigma, delta_x = solve_ltv_LQR(A0, B0, Q0, R0, S0, QT, T, x0, q0, r0, qT)        
-        
-        print(f'Size K: {K.shape}, Size sigma: {sigma.shape}, Size delta_x: {delta_x.shape}')
-        
-        for t in range(T-1):
-            u[:,t,k+1] = u[:,t,k] + step_size * (sigma[:,t] + K[:,:,t] @ delta_x[:,t]) + K[:,:,t] @ (x[:, t, k+1]-x[:,t,k]- step_size * delta_x[:,t])
-            x[:,t+1,k+1] = dyn.dynamics(x[:,t,k+1][:, None], u[:,t,k+1][:, None])[0].flatten()
+    # TODO: check if this is correct
+    A_trajectory[:, :, :] = A0[:, :, np.newaxis]
+    B_trajectory[:, :, :] = B0[:, :, np.newaxis] 
+    
+    Qt = cost.hessian1_J()
+    Q_trajectory[:, :, :] = Qt[:, :, np.newaxis]
+    Rt = cost.hessian2_J()
+    R_trajectory[:, :, :] = Rt[:, :, np.newaxis]
+    
+    Q_trajectory[:,:,-1] = cost.hessian_terminal_cost()
+    q_trajectory[:,-1] = cost.grad_terminal_cost(x_temp_trajectory[:,T-1,0], x_reference[:,T-2])
+    
+    for k in range(max_iter):          
+        for t in range(T-1):   
+            print("Iteration: ", k+1, " Time step: ", t)
+            q_trajectory[:,t] = cost.grad1_J(x_temp_trajectory[:,t,k], x_reference[:,t])
+            r_trajectory[:,t] = cost.grad2_J(u_temp_trajectory[:,t,k], u_reference[:,t])
             
-    return x, u
+            K, sigma, delta_x = solve_ltv_LQR(A_trajectory, 
+                                              B_trajectory, 
+                                              Q_trajectory, 
+                                              R_trajectory, 
+                                              S_trajectory, 
+                                              x0_trajectory, 
+                                              q_trajectory, 
+                                              r_trajectory)
+                
+            u_temp_trajectory[:,t,k+1] = u_temp_trajectory[:,t,k] + step_size * (sigma[:,t] + K[:,:,t] @ delta_x[:,t]) \
+                + K[:,:,t] @ (x_temp_trajectory[:, t, k+1]-x_temp_trajectory[:,t,k]- step_size * delta_x[:,t]) 
+                
+            # print("K[:,:,t]: ", K[:,:,t])
+            # print("sigma[:,t]: ", sigma[:,t])
+            print("delta_x[:,t]: ", delta_x[:,t])
+            print("u_temp_trajectory[:,t,k+1]: ", u_temp_trajectory[:,t,k+1])
+                
+            x_new, dfx, dfu = dyn.dynamics(x_temp_trajectory[:,t,k+1][:, None], 
+                                           u_temp_trajectory[:,t,k+1][:, None], dt=params.dt)
+            
+            x_temp_trajectory[:,t+1,k+1] = x_new.flatten()
+            print("x_temp_trajectory[:,t+1,k+1]: ", x_temp_trajectory[:,t+1,k+1])
+            A_trajectory[:,:,t+1] = dfx 
+            B_trajectory[:,:,t+1] = dfu
+        
+    x_trajectory = x_temp_trajectory[:,:,-1]
+    u_trajectory = u_temp_trajectory[:,:,-1]
+            
+    return x_trajectory, u_trajectory
 
-# Test
-A0 = np.array([[0.9, 0.1, 0.0, 0.0],
-               [0.0, 0.9, 0.1, 0.0],
-               [0.0, 0.0, 0.9, 0.1],
-               [0.1, 0.0, 0.0, 0.9]])
-B0 = np.array([[0.1, 0.0, 0.0, 0.0],
-               [0.0, 0.1, 0.0, 0.0],
-               [0.0, 0.0, 0.1, 0.0],
-               [0.0, 0.0, 0.0, 0.1]])
-Q0 = np.eye(4)
-R0 = np.eye(4)
-S0 = np.zeros((4, 4))
-QT = np.eye(4) * 10
-T = 100
-x0 = np.array([1, 0, 0, 0])
-u0 = np.zeros((4, 1))
+# # Test
+# Q0 = np.eye(4)
+# R0 = np.eye(4)
+# S0 = np.zeros((4, 4))
+# QT = np.eye(4) * 10
+# T = 100
+# x0 = np.array([1, 0, 0, 0])
+# u0 = np.zeros((4, 1))
 
-q0 = np.zeros((4, T))
-r0 = np.zeros((4, T))
-qT = np.zeros(4)
+# q0 = np.zeros((4, T))
+# r0 = np.zeros((4, T))
+# qT = np.zeros(4)
 
-x, u = compute_LQR_trajectory(A0, B0, Q0, R0, S0, QT, T, x0[:,None], q0, r0, qT, u0)
-print(x)
-print(u)
+# x, u = compute_LQR_trajectory(A0, B0, Q0, R0, S0, QT, T, x0[:,None], q0, r0, qT, u0)
+# print("x: ")
+# print(x)
+# print("u: ")
+# print(u)
+
+# # print shape of x and u
+# print("Shape of x: ", x.shape)
+# print("Shape of u: ", u.shape)

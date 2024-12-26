@@ -29,9 +29,16 @@ def generate_trajectory(tf, x_eq1, x_eq2, k_eq, smooth_period=0, dt=1e-3):
             else:  # Between tf/4 and tf-(tf/4)
                 x_reference[i, j] = spline(t)[i] 
 
-        # Control input as sine of the state scaled by k_eq
-        u_reference[i, :] = k_eq * np.sin(x_reference[i, :])
+        # # Control input as sine of the state scaled by k_eq
+        theta1 = x_reference[2, :]  # Extract theta1 from the reference trajectory
+        tau1 = k_eq * np.sin(theta1)  # Compute tau1 as K_eq * sin(theta1)
+        u_reference = np.zeros((4, total_time_steps))  # Initialize the control input
+        u_reference[0, :] = tau1  # Assign tau1 to the first row of u_reference
+
     return x_reference, u_reference
+
+# TODO: Implement this function
+# def plot_trajectory(x_reference, u_reference, dt=1e-3):
 
 # TODO: remove this test function
 # Test function and plotting
@@ -75,5 +82,5 @@ def test_generate_trajectory():
     plt.tight_layout()
     plt.show()
 
-# Call the test function
-test_generate_trajectory()
+# # Call the test function
+# test_generate_trajectory()
