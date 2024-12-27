@@ -30,6 +30,7 @@ def compute_gravity(theta1, theta2):
     g2 = G * M2 * R2 * sin_theta1_theta2
     return np.array([[g1], [g2]])
 
+# TODO: give a better name to this funciton, it is the jacobian of the gravity
 def jacobian(theta1, theta2):
     JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)
     JG_12 = G*M2*R2*np.cos(theta1 + theta2)
