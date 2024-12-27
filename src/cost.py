@@ -84,7 +84,7 @@ def grad_terminal_cost(xT, xT_reference):
     """
     return QT @ (xT - xT_reference)
 
-def hessian1_J(Qt):
+def hessian1_J():
     """
     Computes the Hessian of the cost function with respect to x.
     
@@ -96,7 +96,7 @@ def hessian1_J(Qt):
     """
     return Qt
 
-def hessian2_J(Rt):
+def hessian2_J():
     """
     Computes the Hessian of the cost function with respect to u.
     
