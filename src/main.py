@@ -27,33 +27,32 @@ def main():
     # Initial state and input
     x_0 = np.array([[0], [0], [eq1_theta1], [eq1_theta2]]) # Initial state (dtheta1, dtheta2, theta1, theta2)
     u_0 = np.array([[eq1_tau1], [0], [0], [0]]) # Input (tau1, tau2 , - ,  - )
-    
+    print("Initial state: ", x_0)
+    print("Initial input: ", u_0)
     x_size = x_0.size
     u_size = u_0.size
     
-    # Final desired state and input
+    # Final desired state
     x_f = np.array([[0], [0], [eq2_theta1], [eq2_theta2]])
-    # u_f = np.array([[eq2_tau1], [0], [0], [0]])
+    print("Final desired state: ", x_f)
     
-    print("Initial state: ", x_0)
-    print("Initial input: ", u_0)
-
     # # Compute dynamics for each time step
-    # time_intervals = int((t_f - t_i) / dt + 1)
-    # x_history = [x_0]
+    # time_intervals = int((param.t_f - param.t_i) / param.dt + 1)
+    # x_trajectory = np.zeros((x_size, time_intervals))
+    # x_trajectory[:, 0] = x_0.flatten()
     # print("Computing dynamics...")
-    # for i in range(time_intervals):
-    #     x_history.append(dyn.dynamics(x_history[i], u_0, dt)[0])
+    # for i in range(time_intervals-1):
+    #     x_trajectory[:, i+1] = dyn.dynamics(x_trajectory[:, i][:,None], u_0, param.dt)[0].flatten()
     
-    k_eq = 2.0
-    smooth_period = 0
-    x_reference, u_reference = reference_trajectory.generate_trajectory(param.t_f, x_0, x_f, k_eq, smooth_period, param.dt)
+    k_eq = 40
+    smooth_period = 0.2
+    x_reference, u_reference = reference_trajectory.generate_trajectory(param.t_f, x_0.flatten(), x_f.flatten(), k_eq, smooth_period, param.dt)    
     # reference_trajectory.plot_trajectory(x_reference, u_reference, dt=param.dt)
     
     
     T = x_reference.shape[1]
     
-    # # Compute optimal trajectory
+    # # Compute optimal trajectory using gradient method
     # # Initial guess
     # x_init = np.zeros((x_size, T))
     # u_init = np.zeros((u_size, T))
@@ -61,18 +60,12 @@ def main():
     # u_size = u_0.size
     # x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
     
-    
-    # initial trajectories guesses
-    # x0_trajectory = np.repeat(x_0, T+1, axis=1)
-    # u0_trajectory = np.repeat(u_0, T, axis=1)    
-    
-    x0_trajectory = x_reference
-    u0_trajectory = u_reference
-    x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(param.A0, param.B0, x0_trajectory, u0_trajectory, x_reference, u_reference, step_size=0.1, max_iter=2)
+    x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
 
     # Visualize the simulation
     # matrix_x_history = np.hstack(x_trajectory)
-    anim(x_trajectory.T, param.L1, param.L2, frame_skip=1)
+    frame_skip = int(1/(1000*param.dt))
+    anim(x_trajectory.T, param.L1, param.L2, frame_skip)
 
 if __name__ == "__main__":
     main()

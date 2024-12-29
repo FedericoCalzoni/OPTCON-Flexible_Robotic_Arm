@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
+def animate_double_pendulum(x_history, L1, L2,frame_skip=0):
     """
     Create an animation of a double pendulum.
 
@@ -14,6 +14,7 @@ def animate_double_pendulum(x_history, L1, L2,frame_skip=40):
     """
 
     num_frames = x_history.shape[0]
+    frame_skip += 1
     num_steps = num_frames // frame_skip
     
     positions = np.zeros((num_frames, 4))

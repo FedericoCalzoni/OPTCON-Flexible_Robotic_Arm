@@ -70,60 +70,138 @@ x_dot = sp.simplify(x_dot)
 
 jacobian_G = G.jacobian(x)
 jacobian_x_dot_wrt_x = x_dot.jacobian(x)
+jacobian_x_dot_wrt_x = jacobian_x_dot_wrt_x.subs({tau2: 0, tau3: 0, tau4: 0})
 
-hessians = [sp.hessian(f, x) for f in x_dot]
+hessians_x_dot_wrt_x = [sp.hessian(f, x) for f in x_dot]
+hessians_x_dot_wrt_x = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_dot_wrt_x]
+
 
 jacobian_x_dot_wrt_u = x_dot.jacobian(u)
+jacobian_x_dot_wrt_u = jacobian_x_dot_wrt_u.subs({tau2: 0, tau3: 0, tau4: 0})
 
+hessians_x_dot_wrt_u = [sp.hessian(f, u) for f in x_dot]
+hessians_x_dot_wrt_u = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_dot_wrt_u]
 
+mixed_hessians_x_dot = []
+for f in x_dot:
+    f = sp.Matrix([f])
+    jacobian_wrt_x = f.jacobian(x)
+    hessian_mixed = jacobian_wrt_x.jacobian(u)
+    hessian_mixed = hessian_mixed.subs({tau2: 0, tau3: 0, tau4: 0})
+    mixed_hessians_x_dot.append(hessian_mixed)
 
-print("Matrix M:")
-sp.pprint(M)
-print("\n\n\n\n\n\nMatrix M_inv:")
-sp.pprint(M_inv)
-print("\n\n\n\n\n\nMatrix C:")
-sp.pprint(C)
-print("\n\n\n\n\n\nMatrix G:")
-sp.pprint(G)
-print("\n\n\n\n\n\nMatrix F:")
-sp.pprint(F)
-print("\n\n\n\n\n\nMatrix A:")
-sp.pprint(A)
-print("\n\n\n\n\n\nMatrix B:")
-sp.pprint(B)
-print("\n\n\n\n\n\nMatrix C_ext:")
-sp.pprint(C_ext)
-print("\n\n\n\n\n\nMatrix G_ext:")
-sp.pprint(G_ext)
-print("\n\n\n\n\n\nMatrix x_dot:")
-sp.pprint(x_dot)
-# print("\n\n\nJacobian matrix of x_dot with respect to x:")
-# for i in range(jacobian_x_dot.shape[0]):
-#     for j in range(jacobian_x_dot.shape[1]):
-#         print(f"Element ({i+1}, {j+1}):")
-#         sp.pprint(jacobian_x_dot[i, j])
-#         print("")
+# print("Matrix M:")
+# sp.pprint(M)
+# print("\n\n\n\n\n\nMatrix M_inv:")
+# sp.pprint(M_inv)
+# print("\n\n\n\n\n\nMatrix C:")
+# sp.pprint(C)
+# print("\n\n\n\n\n\nMatrix G:")
+# sp.pprint(G)
+# print("\n\n\n\n\n\nMatrix F:")
+# sp.pprint(F)
+# print("\n\n\n\n\n\nMatrix A:")
+# sp.pprint(A)
+# print("\n\n\n\n\n\nMatrix B:")
+# sp.pprint(B)
+# print("\n\n\n\n\n\nMatrix C_ext:")
+# sp.pprint(C_ext)
+# print("\n\n\n\n\n\nMatrix G_ext:")
+# sp.pprint(G_ext)
+# print("\n\n\n\n\n\nMatrix x_dot:")
+# sp.pprint(x_dot)
 
-
+############################################################################################################
 print("\nGradient matrix of G with respect to x:")
 for i in range(jacobian_G.shape[0]):
     for j in range(jacobian_G.shape[1]):
-        print(f"Gradient element ({i+1}, {j+1}) = {jacobian_G[i, j]}")
+        print(f"Gradient element ({i+1}, {j+1}) = {sp.ccode(jacobian_G[i, j])}")
+
+############################################################################################################
 
 print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to x:")
-for i in range(jacobian_x_dot_wrt_x.shape[0]):
-    for j in range(jacobian_x_dot_wrt_x.shape[1]):
-        print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot_wrt_x[i, j]}")
+subexprs, optimized_function = sp.cse(jacobian_x_dot_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
+print("# Common Subexpressions:")
+for var, expr in subexprs:
+    print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
+    
+function_matrix = optimized_function[0]
+
+print("# Jacobian Elements:")
+rows, cols = function_matrix.shape
+for i in range(rows):
+    for j in range(cols):
+        print(f"dfx[{i},{j}] = {sp.ccode(function_matrix[i, j])}")
+        
+############################################################################################################
         
 print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to u:")
-for i in range(jacobian_x_dot_wrt_u.shape[0]):
-    for j in range(jacobian_x_dot_wrt_u.shape[1]):
-        print(f"Jacobian element ({i+1}, {j+1}) = {jacobian_x_dot_wrt_u[i, j]}")
-        
-print("\n\n\n\n\n\nHessians of x_dot:")
-for i in range(len(hessians)):
-    for j in range(hessians[i].shape[0]):
-        for k in range(hessians[i].shape[1]):
-            print(f"Hessian element ({i+1}, {j+1}, {k+1}) = {hessians[i][j, k]}")
-        
+subexprs, optimized_function = sp.cse(jacobian_x_dot_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
+print("# Common Subexpressions:")
+for var, expr in subexprs:
+    print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
+    
+function_matrix = optimized_function[0]
 
+print("# Jacobian Elements:")
+rows, cols = function_matrix.shape
+for i in range(rows):
+    for j in range(cols):
+        print(f"dfu[{i},{j}] = {sp.ccode(function_matrix[i, j])}")
+        
+############################################################################################################
+
+print("\n\n\n\n\n\nHessians of x_dot with respect to x:")
+subexprs, optimized_hessians = sp.cse(hessians_x_dot_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
+
+print("# Common Subexpressions:")
+for var, expr in subexprs:
+    print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
+
+print("# Hessian Elements:")
+hessian_index = 0
+for hessian in optimized_hessians:
+    print(f"# Hessian {hessian_index}:")
+    rows, cols = hessian.shape
+    for i in range(rows):
+        for j in range(cols):
+            print(f"Hxx[{hessian_index},{i},{j}] = {sp.ccode(hessian[i, j])}")
+    hessian_index += 1
+    
+############################################################################################################
+
+print("\n\n\n\n\n\nHessians of x_dot with respect to u:")
+subexprs, optimized_hessians = sp.cse(hessians_x_dot_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
+
+print("# Common Subexpressions:")
+for var, expr in subexprs:
+    print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
+    
+print("# Hessian Elements:")
+hessian_index = 0
+for hessian in optimized_hessians:
+    print(f"# Hessian {hessian_index}:")
+    rows, cols = hessian.shape
+    for i in range(rows):
+        for j in range(cols):
+            print(f"Huu[{hessian_index},{i},{j}] = {sp.ccode(hessian[i, j])}")
+    hessian_index += 1
+    
+############################################################################################################
+
+print("\n\n\n\n\n\nMixed Hessians of x_dot:")
+subexprs, optimized_mixed_hessians = sp.cse(mixed_hessians_x_dot, symbols=sp.numbered_symbols(prefix='tmp'))
+
+print("# Common Subexpressions:")
+for var, expr in subexprs:
+    print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
+    
+print("# Mixed Hessian Elements:")
+hessian_index = 0
+for hessian in optimized_mixed_hessians:
+    print(f"# Mixed Hessian {hessian_index}:")
+    rows, cols = hessian.shape
+    for i in range(rows):
+        for j in range(cols):
+            print(f"Hxu[{hessian_index},{i},{j}] = {sp.ccode(hessian[i, j])}")
+    hessian_index += 1

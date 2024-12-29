@@ -13,19 +13,18 @@ F1 = 0.1
 F2 = 0.1
 
 t_i = 0
-t_f = 5
+t_f = 10
 dt = 1e-2
 
 # Cost Function parameters
 Qt = np.diag([1, 1, 1, 1])
 Rt = np.diag([1, 1, 1, 1])
-QT = np.diag([10000, 10000, 10000, 10000])
+QT = np.diag([1, 1, 1, 1])
+qt = np.array([1, 1, 1, 1])
+qT = np.array([1, 1, 1, 1])
+rt = np.array([1, 1, 1, 1])
+rT = np.array([1, 1, 1, 1])
 
 # Armijo parameters
 c = 0.5
 beta = 0.7
-
-# LQR parameters
-# TODO: values are casual. put the right values
-A0 = np.eye(4)
-B0 = np.eye(4)
