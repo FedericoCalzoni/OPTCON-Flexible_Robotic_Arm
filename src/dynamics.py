@@ -30,6 +30,53 @@ def compute_gravity(theta1, theta2):
     g2 = G * M2 * R2 * sin_theta1_theta2
     return np.array([[g1], [g2]])
 
+def dynamics(x, u, dt=1e-3):
+
+    dtheta1 = x[0].item()
+    dtheta2 = x[1].item()
+    theta1 = x[2].item()
+    theta2 = x[3].item()
+
+    # Compute matrices
+    M = compute_inertia_matrix(theta2)
+    M_inv = np.linalg.inv(M)
+    C = compute_coriolis(theta2, dtheta1, dtheta2)
+    G = compute_gravity(theta1, theta2)
+    
+    A = np.block([[ -M_inv @ F, Z_2x2 ], 
+                  [ np.eye(2), Z_2x2 ]])
+       
+    
+    M_inv_ext = np.block([
+        [M_inv, Z_2x2],
+        [Z_2x2, Z_2x2]
+    ])
+
+    B = M_inv_ext
+    
+    C_ext = np.block([
+        [C],
+        [np.zeros((2, 1))]  # Ensure the zeros are in the same shape (2, 1)
+    ])
+    
+    G_ext = np.block([
+        [G],
+        [np.zeros((2, 1))]
+    ])
+    
+    x_dot = A @ x + B @ u - M_inv_ext @ (C_ext + G_ext)
+    
+    x_new = x + dt * x_dot
+    
+    #dfx = jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
+    #dfu = jacobian_x_dot_wrt_u(theta2)
+    #
+    #Hxx = hessian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
+    #Huu = hessian_x_dot_wrt_u()
+    #Hxu = hessian_x_dot_wrt_xu(theta2)
+        
+    return x_new #, dfx, dfu, Hxx, Huu, Hxu
+
 # TODO: give a better name to this funciton, it is the jacobian of the gravity
 def jacobian(theta1, theta2):
     JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)
@@ -277,50 +324,17 @@ def hessian_x_dot_wrt_xu(theta2):
     Hxu[1,3,1] = -tmp10*(I1 + 2*tmp13 + tmp2 + tmp6 + tmp7) - 2*tmp11*tmp12*tmp4
     return Hxu
     
-    
-def dynamics(x, u, dt=1e-3):
+def jacobian_x_dot_wrt_x_simplified(x, u):
+    return jacobian_x_dot_wrt_x(x[0], x[1], x[2], x[3], u[0])
 
-    dtheta1 = x[0].item()
-    dtheta2 = x[1].item()
-    theta1 = x[2].item()
-    theta2 = x[3].item()
+def jacobian_x_dot_wrt_u_simplified(x):
+    return jacobian_x_dot_wrt_u(x[3])
 
-    # Compute matrices
-    M = compute_inertia_matrix(theta2)
-    M_inv = np.linalg.inv(M)
-    C = compute_coriolis(theta2, dtheta1, dtheta2)
-    G = compute_gravity(theta1, theta2)
-    
-    A = np.block([[ -M_inv @ F, Z_2x2 ], 
-                  [ np.eye(2), Z_2x2 ]])
-       
-    
-    M_inv_ext = np.block([
-        [M_inv, Z_2x2],
-        [Z_2x2, Z_2x2]
-    ])
+def hessian_x_dot_wrt_x_simplified(x, u):
+    return hessian_x_dot_wrt_x(x[0], x[1], x[2], x[3], u[0])
 
-    B = M_inv_ext
-    
-    C_ext = np.block([
-        [C],
-        [np.zeros((2, 1))]  # Ensure the zeros are in the same shape (2, 1)
-    ])
-    
-    G_ext = np.block([
-        [G],
-        [np.zeros((2, 1))]
-    ])
-    
-    x_dot = A @ x + B @ u - M_inv_ext @ (C_ext + G_ext)
-    
-    x_new = x + dt * x_dot
-    
-    dfx = jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
-    dfu = jacobian_x_dot_wrt_u(theta2)
-    
-    Hxx = hessian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, u[0].item())
-    Huu = hessian_x_dot_wrt_u()
-    Hxu = hessian_x_dot_wrt_xu(theta2)
-        
-    return x_new, dfx, dfu, Hxx, Huu, Hxu
+def hessian_x_dot_wrt_u_simplified():
+    return hessian_x_dot_wrt_u()
+
+def hessian_x_dot_wrt_xu_simplified(x):
+    return hessian_x_dot_wrt_xu(x[3])
