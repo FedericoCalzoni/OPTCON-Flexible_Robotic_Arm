@@ -8,6 +8,7 @@ import cost
 from gradient_method import gradient_method
 import reference_trajectory
 import LQR
+from newton_opt_ctrl import NewtonForOPTCON as newton_OC
 
 def main():
     
@@ -60,8 +61,8 @@ def main():
     # u_size = u_0.size
     # x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
     
-    x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
-
+    # x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
+    x_trajectory, u_trajectory = newton_OC(x_reference, u_reference)
     # Visualize the simulation
     # matrix_x_history = np.hstack(x_trajectory)
     frame_skip = int(1/(1000*param.dt))
