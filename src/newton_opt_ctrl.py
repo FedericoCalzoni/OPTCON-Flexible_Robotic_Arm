@@ -132,7 +132,7 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
 
     for t in range(1, TT-1):
         delta_u[:,t] = Kt[:,:,t] @ (x_optimal[:,t] - x_reference[:,t]) + sigma_t[:,t]
-        delta_x[:,t+1] = A[:,:,t] @ delta_x[:,t-1] + B[:,:,t] @ delta_u[:,t]
+        delta_x[:,t+1] = A[:,:,t] @ delta_x[:,t] + B[:,:,t] @ delta_u[:,t]
 
 
     return Kt, sigma_t, delta_u
