@@ -30,7 +30,8 @@ def J_Function(x_trajectory, u_trajectory, x_reference, u_reference, type):
                           x_reference[:, i], 
                           u_trajectory[:, i], 
                           u_reference[:, i], type)
-        J = J + terminal_cost(x_trajectory[:, T-1], x_trajectory[:, T-1], type)
+    J = J + terminal_cost(x_trajectory[:, T-1], x_trajectory[:, T-1], type)
+    
     return J
 
 
@@ -116,7 +117,7 @@ def terminal_cost(x_stage, x_reference,type):
             J_T = (1/2) * delta_x_tilde.T @ QT @ delta_x_tilde
 
         case "LQR":
-            J_T = (1/2) * delta_x.T @ QT @ delta_x.T
+            J_T = (1/2) * delta_x.T @ QT @ delta_x
 
     return J_T
 
@@ -194,4 +195,17 @@ def hessian_12_J(x_trajectory, u_trajectory):
     Returns:
         numpy.ndarray: The mixed Hessian, which is a zero matrix.
     """
-    return np.zeros((x_trajectory.shape[0], u_trajectory.shape[0]))
+    return np.zeros((u_trajectory.shape[0], x_trajectory.shape[0]))
+
+def hessian_terminal_cost():
+    """
+    Computes the Hessian of the terminal cost function with respect to x.
+    
+    Args:
+        QT (numpy.ndarray): Weight matrix of shape (4, 4).
+ 
+    Returns:
+        numpy.ndarray: The Hessian of the terminal cost function, which is equal to QT.
+    """
+    return QT
+ 
