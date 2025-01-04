@@ -18,12 +18,9 @@ dt = 1e-2
 
 # Cost Function parameters
 Qt = np.diag([1, 1, 1, 1])
-Rt = np.diag([1, 1, 1, 1])
+Rt = np.diag([1])
 QT = np.diag([1, 1, 1, 1])
-qt = np.array([1, 1, 1, 1])
-qT = np.array([1, 1, 1, 1])
-rt = np.array([1, 1, 1, 1])
-rT = np.array([1, 1, 1, 1])
+
 
 # Armijo parameters
 c = 0.5
