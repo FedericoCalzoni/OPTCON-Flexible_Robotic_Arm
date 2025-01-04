@@ -1,39 +1,42 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
+import parameters as pm
 
-def generate_trajectory(tf, x_eq1, x_eq2, k_eq, smooth_period=0, dt=1e-3):
-    total_time_steps = int(tf / dt)
+def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2, smooth_period=0):
+    total_time_steps = int(tf / pm.dt)
     time = np.linspace(0, tf, total_time_steps)
     x_size = x_eq2.shape[0]
     
     # Initialize references
     x_reference = np.zeros((x_size, total_time_steps))
-    u_reference = np.zeros((x_size, total_time_steps))  
+    u_reference = np.zeros((1, total_time_steps))
+
+    # Create the cubic spline for the middle region
+    t1 = tf / (2*pm.dt) - tf*smooth_period / (2*pm.dt)
+    t2 = tf / (2*pm.dt) + tf*smooth_period / (2*pm.dt)
   
     for i in range(x_size):
-        
-        # Create the cubic spline for the middle region
-        t1 = tf / 2 - tf*smooth_period / 2
-        t2 = tf /2 + tf*smooth_period / 2
         # Create a cubic spline to interpolate between x_eq1 and x_eq2
-        
         if smooth_period != 0:
             spline = CubicSpline([t1, t2], np.vstack([x_eq1, x_eq2]), bc_type='clamped')
-        
-        for j, t in enumerate(time):
-            if t < t1:  # Before tf/4
-                x_reference[i, j] = x_eq1[i]
+        for t in range(total_time_steps):
+            if t <= t1:  # Before tf/4
+                x_reference[i, t] = x_eq1[i]
             elif t > t2:  # After tf-(tf/4)
-                x_reference[i, j] = x_eq2[i]
+                x_reference[i, t] = x_eq2[i]
             else:  # Between tf/4 and tf-(tf/4)
-                x_reference[i, j] = spline(t)[i] 
+                x_reference[i, t] = spline(t)[i] 
 
-        # # Control input as sine of the state scaled by k_eq
-        theta1 = x_reference[2, :]  # Extract theta1 from the reference trajectory
-        tau1 = k_eq * np.sin(theta1)  # Compute tau1 as K_eq * sin(theta1)
-        u_reference = np.zeros((4, total_time_steps))  # Initialize the control input
-        u_reference[0, :] = tau1  # Assign tau1 to the first row of u_reference
+    if smooth_period != 0:
+        spline = CubicSpline([t1, t2], np.vstack([u_eq1, u_eq2]), bc_type='clamped')
+    for t in range(total_time_steps):
+            if t <= t1:  # Before tf/4
+                u_reference[:,t] = u_eq1
+            elif t > t2:  # After tf-(tf/4)
+                u_reference[:,t] = u_eq2
+            else:  # Between tf/4 and tf-(tf/4)
+                u_reference[:,t] = spline(t) 
 
     return x_reference, u_reference
 
