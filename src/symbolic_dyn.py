@@ -1,8 +1,8 @@
 import sympy as sp
 
 # Symbolic variables
-M1, M2, L1, L2, R1, R2, I1, I2, G, F1, F2 = sp.symbols('M1 M2 L1 L2 R1 R2 I1 I2 G F1 F2')
-tau1, tau2, tau3, tau4= sp.symbols('tau1 tau2 tau3 tau4')
+M1, M2, L1, L2, R1, R2, I1, I2, G, F1, F2, dt = sp.symbols('M1 M2 L1 L2 R1 R2 I1 I2 G F1 F2 dt')
+tau1, tau2, tau3, tau4 = sp.symbols('tau1 tau2 tau3 tau4')
 theta1, theta2, dtheta1, dtheta2 = sp.symbols('theta1 theta2 dtheta1 dtheta2')
 
 def compute_inertia_matrix(theta2):
@@ -63,32 +63,33 @@ G_ext = sp.BlockMatrix([[G],
 G_ext = G_ext.as_explicit()
 
 x = sp.Matrix([[dtheta1], [dtheta2], [theta1], [theta2]])
-u = sp.Matrix([[tau1],[tau2],[tau3],[tau4]])
+u = sp.Matrix([[tau1], [tau2], [tau3], [tau4]])
+u_reduced = sp.Matrix([[tau1]])
 
-x_dot = A*x + B*u - M_inv_ext*(C_ext + G_ext) # x_dot = f(x, u) 
+x_dot = A*x + B*u - M_inv_ext*(C_ext + G_ext) # x_new = f(x, u) 
 x_dot = sp.simplify(x_dot)
 
-jacobian_G = G.jacobian(x)
-jacobian_x_dot_wrt_x = x_dot.jacobian(x)
-jacobian_x_dot_wrt_x = jacobian_x_dot_wrt_x.subs({tau2: 0, tau3: 0, tau4: 0})
+x_new = x + x_dot*dt
 
-hessians_x_dot_wrt_x = [sp.hessian(f, x) for f in x_dot]
-hessians_x_dot_wrt_x = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_dot_wrt_x]
+x_new = x_new.subs({tau2: 0, tau3: 0, tau4: 0})
+
+jacobian_x_new_wrt_x = x_new.jacobian(x)
+jacobian_x_new_wrt_x = jacobian_x_new_wrt_x.subs({tau2: 0, tau3: 0, tau4: 0})
+
+jacobian_x_new_wrt_u = x_new.jacobian(u_reduced)
+
+hessians_x_new_wrt_x = [sp.hessian(f, x) for f in x_new]
+hessians_x_dot_wrt_x = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_new_wrt_x]
+hessians_x_new_wrt_u = [sp.hessian(f, u_reduced) for f in x_new]
+hessians_x_dot_wrt_u = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_new_wrt_u]
 
 
-jacobian_x_dot_wrt_u = x_dot.jacobian(u)
-jacobian_x_dot_wrt_u = jacobian_x_dot_wrt_u.subs({tau2: 0, tau3: 0, tau4: 0})
-
-hessians_x_dot_wrt_u = [sp.hessian(f, u) for f in x_dot]
-hessians_x_dot_wrt_u = [hessian.subs({tau2: 0, tau3: 0, tau4: 0}) for hessian in hessians_x_dot_wrt_u]
-
-mixed_hessians_x_dot = []
-for f in x_dot:
-    f = sp.Matrix([f])
-    jacobian_wrt_x = f.jacobian(x)
-    hessian_mixed = jacobian_wrt_x.jacobian(u)
-    hessian_mixed = hessian_mixed.subs({tau2: 0, tau3: 0, tau4: 0})
-    mixed_hessians_x_dot.append(hessian_mixed)
+mixed_hessians_x_new = []
+for f in x_new:
+   f = sp.Matrix([f])
+   jacobian_wrt_x = f.jacobian(x)
+   hessian_mixed = jacobian_wrt_x.jacobian(u_reduced)
+   mixed_hessians_x_new.append(hessian_mixed)
 
 # print("Matrix M:")
 # sp.pprint(M)
@@ -108,19 +109,18 @@ for f in x_dot:
 # sp.pprint(C_ext)
 # print("\n\n\n\n\n\nMatrix G_ext:")
 # sp.pprint(G_ext)
-# print("\n\n\n\n\n\nMatrix x_dot:")
-# sp.pprint(x_dot)
-
-############################################################################################################
-print("\nGradient matrix of G with respect to x:")
-for i in range(jacobian_G.shape[0]):
-    for j in range(jacobian_G.shape[1]):
-        print(f"Gradient element ({i+1}, {j+1}) = {sp.ccode(jacobian_G[i, j])}")
 
 ############################################################################################################
 
-print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to x:")
-subexprs, optimized_function = sp.cse(jacobian_x_dot_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
+print("\n\n\n\n\n\nMatrix x_new:")
+sp.pprint(x_new)
+for i in range(x_new.shape[0]):
+    print(f"x_new[{i}] = {sp.ccode(x_new[i])}")
+
+############################################################################################################
+
+print("\n\n\n\n\n\nJacobian matrix of x_new with respect to x:")
+subexprs, optimized_function = sp.cse(jacobian_x_new_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
 print("# Common Subexpressions:")
 for var, expr in subexprs:
     print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
@@ -135,8 +135,8 @@ for i in range(rows):
         
 ############################################################################################################
         
-print("\n\n\n\n\n\nJacobian matrix of x_dot with respect to u:")
-subexprs, optimized_function = sp.cse(jacobian_x_dot_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
+print("\n\n\n\n\n\nJacobian matrix of x_new with respect to u:")
+subexprs, optimized_function = sp.cse(jacobian_x_new_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
 print("# Common Subexpressions:")
 for var, expr in subexprs:
     print(f"{sp.ccode(var)} = {sp.ccode(expr)}")
@@ -151,8 +151,8 @@ for i in range(rows):
         
 ############################################################################################################
 
-print("\n\n\n\n\n\nHessians of x_dot with respect to x:")
-subexprs, optimized_hessians = sp.cse(hessians_x_dot_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
+print("\n\n\n\n\n\nHessians of x_new with respect to x:")
+subexprs, optimized_hessians = sp.cse(hessians_x_new_wrt_x, symbols=sp.numbered_symbols(prefix='tmp'))
 
 print("# Common Subexpressions:")
 for var, expr in subexprs:
@@ -170,8 +170,8 @@ for hessian in optimized_hessians:
     
 ############################################################################################################
 
-print("\n\n\n\n\n\nHessians of x_dot with respect to u:")
-subexprs, optimized_hessians = sp.cse(hessians_x_dot_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
+print("\n\n\n\n\n\nHessians of x_new with respect to u:")
+subexprs, optimized_hessians = sp.cse(hessians_x_new_wrt_u, symbols=sp.numbered_symbols(prefix='tmp'))
 
 print("# Common Subexpressions:")
 for var, expr in subexprs:
@@ -189,8 +189,8 @@ for hessian in optimized_hessians:
     
 ############################################################################################################
 
-print("\n\n\n\n\n\nMixed Hessians of x_dot:")
-subexprs, optimized_mixed_hessians = sp.cse(mixed_hessians_x_dot, symbols=sp.numbered_symbols(prefix='tmp'))
+print("\n\n\n\n\n\nMixed Hessians of x_new:")
+subexprs, optimized_mixed_hessians = sp.cse(mixed_hessians_x_new, symbols=sp.numbered_symbols(prefix='tmp'))
 
 print("# Common Subexpressions:")
 for var, expr in subexprs:
