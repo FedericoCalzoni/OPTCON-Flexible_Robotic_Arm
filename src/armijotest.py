@@ -46,6 +46,8 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         descent = descent + gradJ[:,t] * delta_u[:,t]
 
     for i in range(max_iterations-1):
+        x_update[:,:] = x_trajectory
+        u_update[:,:] = u_trajectory
         for t in range(horizon-1):
             u_update[:,t] = u_trajectory[:,t] + Kt[:,:,t] @ (x_update[:,t] - x_trajectory[:,t]) + sigma_t[:,t] * step_size
             x_update[:,t+1] = dyn.dynamics(x_update[:,t].reshape(-1, 1), u_update[:,t].reshape(-1, 1))
