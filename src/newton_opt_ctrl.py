@@ -1,7 +1,7 @@
 import numpy as np
 import dynamics as dyn
 import cost
-import parameters as pm
+import parameters as param
 import matplotlib.pyplot as plt
 from numpy.linalg import inv
 import armijotest as armijo
@@ -10,7 +10,7 @@ def newton_for_optcon(x_reference, u_reference):
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]
-    max_iterations = 10000
+    max_iterations = 1000
     
     l = np.zeros(max_iterations) # Cost function
     x_initial_guess = x_reference[:,0]
@@ -28,8 +28,15 @@ def newton_for_optcon(x_reference, u_reference):
     Qt_Star = np.zeros((x_size,x_size,TT-1))
     St_Star = np.zeros((u_size, x_size,TT-1))
     Rt_Star = np.zeros((u_size, u_size,TT-1))
+
+    K_Star = np.zeros((u_size, x_size, TT-1, max_iterations))
+    sigma_star = np.zeros((u_size, TT-1, max_iterations))
+    delta_u = np.zeros((u_size, TT-1, max_iterations))
+
     A = np.zeros((x_size,x_size,TT-1))
     B = np.zeros((x_size,u_size,TT-1))
+
+    
 
     # Inizializzo la prima istanza della traiettoria ottimale
     for t in range(TT):
@@ -38,8 +45,21 @@ def newton_for_optcon(x_reference, u_reference):
 
     # Applichiamo il metodo di Newton per calcolare la traiettoria ottimale
     for k in range(max_iterations):
+        if k % 2 == 0:
+            plt.figure()
+            for i in range(4):
+                plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
+                plt.plot(x_reference[i,:], color = 'orange', label =f'x_reference[{i+1}]')
+            for i in range(u_size):
+                plt.plot(u_optimal[i,:,k], color = 'purple', label =f'u_optimal[{i+1}]')
+                plt.plot(u_reference[i,:],color = 'yellow', label =f'u_reference[{i+1}]')
+            plt.grid()
+            plt.legend()
+            plt.title(f'State Input Evolution\n$Iteration = {k}$')
+            plt.show()
 
-        x_optimal[:,0, k] = x_initial_guess
+
+        x_optimal[:,0, k+1] = x_initial_guess
 
         # Calcoliamo il costo della traiettoria di partenza. Alla fine di questo ciclo, 
         #   lo confrontiamo con il costo della traiettoria calcolata durante il ciclo.
@@ -76,30 +96,42 @@ def newton_for_optcon(x_reference, u_reference):
 
         ########## Compute the optimal control input [S18C9]
         # To compute the descent direction, the affine LQR must be solved
-        K_star, sigma_star, delta_u =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
+        K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
+        PlotMe = True
+        if PlotMe == True and k%5 == 0:
+            plt.figure()
+            plt.title(f'Affine LQR solution at\nIteration {k}')
+            for i in range(u_size):
+                plt.plot(sigma_star[i,:, k], color = 'red', label = f'Sigma[{i}]')
+                plt.plot(delta_u[i,:, k], color = 'purple', label = f'\Delta_u[{i}]')
+                for j in range(x_size):
+                    plt.plot(K_Star[i, j, :, k], color = 'blue', label = f'K[{i} , {j}]')
+            plt.grid()
+            plt.legend()
+            plt.show()
+        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
 
-        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u, GradJ_u, l[k], K_star, sigma_star, k, step_size_0=1)
+        #gamma = 0.1
 
-        #####################################################################################################
-        #####################################################################################################
-        #####################################################################################################
-        #####################################################################################################
-        # Razza di un idiota, il problema è qui sotto ma se non dormi non lo vedi. Vatti a letto.
         for t in range(TT-1): 
-            u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_star[:,:,t] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t]
+            u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_Star[:,:,t, k] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t, k]
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
         l[k+1] = cost.J_Function(x_optimal[:,:,k+1], u_optimal[:,:,k+1], x_reference, u_reference, "LQR")
-        print(f"\nIteration: {k} Cost: {l[k+1]}   Cost reduction: {l[k+1] - l[k]}")
+        print(f"\nIteration: {k+1} Cost: {l[k+1]}   Cost reduction: {l[k+1] - l[k]}")
+
+        if k == 5:
+            breakpoint()
+
         if np.abs(l[k+1] - l[k]) < 1e-6:
             break
     
     return x_optimal[:,:,k], u_optimal[:,:,k], l[:k]
 
 
-def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT):
+def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
     x_size = x_reference.shape[0]
-    u_size = rt.shape[0]
+    u_size = r.shape[0]
     TT = x_reference.shape[1]
     
 
@@ -109,36 +141,53 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
     delta_x[:,0] = x_optimal[:,0] - x_reference[:,0]
 
     ct = np.zeros((x_size,1)) 
-    Pt = np.zeros((x_size,x_size,TT))
-    pt = np.zeros((x_size,TT))
+    P = np.zeros((x_size,x_size,TT))
+    Pt = np.zeros((x_size,x_size))
+    Ptt= np.zeros((x_size,x_size))
+
+    p = np.zeros((x_size,TT))
+    pt= np.zeros((x_size, 1))
+    ptt=np.zeros((x_size, 1))
     
-    Kt = np.zeros((u_size,x_size,TT-1))
-    sigma_t = np.zeros((u_size,TT-1))
+    K = np.zeros((u_size,x_size,TT-1))
+    Kt= np.zeros((u_size,x_size))
+    Sigma = np.zeros((u_size,TT-1))
+    sigma_t = np.zeros((u_size, 1))
 
     ######### Solve the augmented system Riccati Equation [S16C9]
-    Pt[:,:,TT-1] = QT_Star
-    pt[:,TT-1] = qT
+    P[:,:,TT-1] = QT_Star
+    p[:,TT-1] = qT
 
     for t in reversed(range(TT-1)):
-       # Assegna ciascun valore ad una variabile temporanea per rendere l'equazione comprensibile
-       At = A[:,:,t]
-       Bt = B[:,:,t]
-       Qt = Qt_Star[:,:,t]
-       Rt = Rt_Star[:,:,t]
-       St = St_Star[:,:,t]
-       r = rt[:,t].reshape(-1, 1)
-       q = qt[:,t].reshape(-1, 1)
-       
+        # Assegna ciascun valore ad una variabile temporanea per rendere l'equazione comprensibile
+        At  = A[:,:,t]
+        Bt  = B[:,:,t]
+        Qt  = Qt_Star[:,:,t]
+        Rt  = Rt_Star[:,:,t]
+        St  = St_Star[:,:,t]
+        rt  = r[:,t].reshape(-1, 1)
+        qt  = q[:,t].reshape(-1, 1)
+        ptt = p[:,t+1].reshape(-1,1)
+        Ptt = P[:,:,t+1]
 
-       Kt[:,:,t]=-inv(Rt + Bt.T @ Pt[:,:,t+1] @ Bt) @ (St + Bt.T @ Pt[:,:,t+1] @ At)
-       sigma_t[:,t]=-inv(Rt + Bt.T @ Pt[:,:,t+1] @ Bt) @ (r + Bt.T @ pt[:,t+1].reshape(-1, 1) + Bt.T @ Pt[:,:,t+1] @ ct).flatten()
-       pt[:,t] = (q + At.T @ pt[:,t+1].reshape(-1, 1) + At.T @ Pt[:,:,t+1] @ ct - Kt[:,:,t].T @ (Rt + Bt.T @ Pt[:,:,t+1] @ Bt) @ sigma_t[:,t].reshape(-1, 1)).flatten()
-       Pt[:,:,t] = Qt + At.T @ Pt[:,:,t+1] @ At - Kt[:,:,t].T @ (Rt + Bt.T @ Pt[:,:,t+1] @ Bt) @ Kt[:,:,t]
+        temp = (Rt + Bt.T @ Ptt @ Bt)
+        inv_temp = inv(temp)
+
+        Kt =-inv_temp @ (St + Bt.T @ Ptt @ At)
+        sigma_t=-inv_temp @ (rt + Bt.T @ ptt + Bt.T @ Ptt @ ct)
+
+        pt = qt + At.T @ ptt + At.T @ Ptt @ ct - Kt.T @ temp @ sigma_t
+        Pt = Qt + At.T @ Ptt @ At - Kt.T @ temp @ Kt
+
+        K[:,:,t] = Kt
+        Sigma[:,t] = sigma_t
+        p[:,t] = pt.flatten()
+        P[:,:,t] = Pt 
 
 
-    for t in range(1, TT-1):
-        delta_u[:,t] = Kt[:,:,t] @ (x_optimal[:,t] - x_reference[:,t]) + sigma_t[:,t]
+    for t in range(TT-1):
+        delta_u[:,t] = K[:,:,t] @ delta_x[:,t] + Sigma[:,t]
         delta_x[:,t+1] = A[:,:,t] @ delta_x[:,t] + B[:,:,t] @ delta_u[:,t]
 
 
-    return Kt, sigma_t, delta_u
+    return K, Sigma, delta_u
