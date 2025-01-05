@@ -25,3 +25,5 @@ QT = np.diag([1, 1, 1, 1])
 # Armijo parameters
 c = 0.5
 beta = 0.7
+Arm_plot = False
+Arm_plot_every_k_iter = 4 

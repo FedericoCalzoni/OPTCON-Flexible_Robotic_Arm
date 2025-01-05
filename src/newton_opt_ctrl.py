@@ -44,7 +44,7 @@ def newton_for_optcon(x_reference, u_reference):
         # Calcoliamo il costo della traiettoria di partenza. Alla fine di questo ciclo, 
         #   lo confrontiamo con il costo della traiettoria calcolata durante il ciclo.
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
-        print("\nIteration: ", k, " Cost: ", l[k])
+        
 
         
         for t in range(TT-1):
@@ -78,14 +78,19 @@ def newton_for_optcon(x_reference, u_reference):
         # To compute the descent direction, the affine LQR must be solved
         K_star, sigma_star, delta_u =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
 
-        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u, GradJ_u, l[k], K_star, sigma_star, step_size_0=1)
+        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u, GradJ_u, l[k], K_star, sigma_star, k, step_size_0=1)
 
+        #####################################################################################################
+        #####################################################################################################
+        #####################################################################################################
+        #####################################################################################################
+        # Razza di un idiota, il problema è qui sotto ma se non dormi non lo vedi. Vatti a letto.
         for t in range(TT-1): 
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_star[:,:,t] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t]
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
         l[k+1] = cost.J_Function(x_optimal[:,:,k+1], u_optimal[:,:,k+1], x_reference, u_reference, "LQR")
-
+        print(f"\nIteration: {k} Cost: {l[k+1]}   Cost reduction: {l[k+1] - l[k]}")
         if np.abs(l[k+1] - l[k]) < 1e-6:
             break
     
