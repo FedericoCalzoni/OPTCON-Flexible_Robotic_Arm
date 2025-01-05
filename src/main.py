@@ -28,7 +28,7 @@ def main():
     
     # Initial state and input
     x_0 = np.array([[0], [0], [eq1_theta1], [eq1_theta2]]) # Initial state (dtheta1, dtheta2, theta1, theta2)
-    u_0 = np.array([3*eq1_tau1]) # Input (tau1)
+    u_0 = np.array([eq1_tau1]) # Input (tau1)
     print("Initial state: ", x_0)
     print("Initial input: ", u_0)
     x_size = x_0.size
