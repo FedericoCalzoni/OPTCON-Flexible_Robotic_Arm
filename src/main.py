@@ -2,7 +2,7 @@ import dynamics as dyn
 from dynamics import  jacobian_gravity
 from visualizer import animate_double_pendulum as anim
 import numpy as np
-import parameters as param #TODO: import individually L1, L2, t_i, t_f, dt, A0, B0
+import parameters as param
 from newton_method import newton_method
 import cost
 from gradient_method import gradient_method
@@ -42,10 +42,10 @@ def main():
     time_intervals = int((param.t_f - param.t_i) / param.dt + 1)
     x_trajectory = np.zeros((x_size, time_intervals))
     x_trajectory[:, 0] = x_0.flatten()
-    # print("Computing dynamics...")
-    # for i in range(time_intervals-1):
-    #     x_trajectory[:, i+1] = dyn.dynamics(x_trajectory[:, i], u_0)
-    
+    #print("Computing dynamics...")
+    #for i in range(time_intervals-1):
+    #    x_trajectory[:, i+1] = dyn.dynamics(x_trajectory[:, i], u_0)
+
     k_eq = eq1_tau1 / np.sin(eq1_theta1)
     smooth_percentage = 0.2
     x_reference, u_reference = reference_trajectory.generate_trajectory(param.t_f, x_0.flatten(), x_f.flatten(), eq1_tau1, eq2_tau1, smooth_percentage)    
@@ -53,7 +53,7 @@ def main():
     
     
     T = x_reference.shape[1]
-
+#
     # # Compute optimal trajectory using gradient method
     # # Initial guess
     # x_init = np.zeros((x_size, T))
@@ -66,6 +66,21 @@ def main():
     x_trajectory, u_trajectory, l = newton_OC(x_reference, u_reference)
     # Visualize the simulation
     # matrix_x_history = np.hstack(x_trajectory)
+
+    #x_debug = np.zeros((x_size,time_intervals-1))
+    #u_debug = np.zeros((u_size,time_intervals-2))
+    #A_debug = np.zeros((x_size, x_size, time_intervals-1))
+    #B_debug = np.zeros((x_size, u_size, time_intervals-1))
+    #x_debug[:, 0] = x_0.flatten()
+#
+    #for t in range (time_intervals-2):
+    #    u_debug[:, t] = u_0.flatten()
+    #    A_debug[:,:,t] = dyn.jacobian_x_new_wrt_x(x_debug[:,t], u_debug[:,t])
+    #    B_debug[:,:,t] = dyn.jacobian_x_new_wrt_u(x_debug[:,t])
+    #    x_debug[:, t+1] = A_debug[:,:,t] @ x_debug[:,t] + B_debug[:,:,t] @ u_debug[:,t]
+    #
+#
+    #x_trajectory = x_debug
     frame_skip = int(1/(1000*param.dt))
     anim(x_trajectory.T, param.L1, param.L2, frame_skip)
 

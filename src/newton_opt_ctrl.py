@@ -1,7 +1,7 @@
 import numpy as np
 import dynamics as dyn
 import cost
-import parameters as param
+import parameters as pm
 import matplotlib.pyplot as plt
 from numpy.linalg import inv
 import armijotest as armijo
@@ -45,7 +45,7 @@ def newton_for_optcon(x_reference, u_reference):
 
     # Applichiamo il metodo di Newton per calcolare la traiettoria ottimale
     for k in range(max_iterations):
-        if k % 2 == 0:
+        if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
             plt.figure()
             for i in range(4):
                 plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
@@ -98,7 +98,7 @@ def newton_for_optcon(x_reference, u_reference):
         # To compute the descent direction, the affine LQR must be solved
         K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
         PlotMe = True
-        if PlotMe == True and k%5 == 0:
+        if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
             plt.figure()
             plt.title(f'Affine LQR solution at\nIteration {k}')
             for i in range(u_size):
@@ -120,13 +120,12 @@ def newton_for_optcon(x_reference, u_reference):
         l[k+1] = cost.J_Function(x_optimal[:,:,k+1], u_optimal[:,:,k+1], x_reference, u_reference, "LQR")
         print(f"\nIteration: {k+1} Cost: {l[k+1]}   Cost reduction: {l[k+1] - l[k]}")
 
-        if k == 5:
-            breakpoint()
-
         if np.abs(l[k+1] - l[k]) < 1e-6:
             break
     
-    return x_optimal[:,:,k], u_optimal[:,:,k], l[:k]
+
+    print(f'Dai cazzo ho finito alla {k+1}^ iterazione')
+    return x_optimal[:,:,k+1], u_optimal[:,:,k+1], l[:k+1]
 
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):

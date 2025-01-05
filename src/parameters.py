@@ -14,7 +14,7 @@ F2 = 0.1
 
 t_i = 0
 t_f = 10
-dt = 1e-3
+dt = 1e-2
 
 # Cost Function parameters
 Qt = np.diag([1, 1, 10, 10])
@@ -25,5 +25,8 @@ QT = np.diag([10, 10, 10, 10])
 # Armijo parameters
 c = 0.5
 beta = 0.7
-Arm_plot = True
+Arm_plot = False
 Arm_plot_every_k_iter = 10
+
+Newton_Optcon_Plots = False
+Newton_Plot_every_k_iterations = 3
