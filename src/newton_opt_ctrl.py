@@ -22,7 +22,8 @@ def newton_for_optcon(x_reference, u_reference):
     qt = np.zeros((x_size,TT-1))
     rt = np.zeros((u_size,TT-1))
 
-    # Lambda = np.zeros((4,TT))
+    Lambda = np.zeros((4,TT))
+    GradJ_u = np.zeros((u_size,TT-1))
 
     Qt_Star = np.zeros((x_size,x_size,TT-1))
     St_Star = np.zeros((u_size, x_size,TT-1))
@@ -53,13 +54,13 @@ def newton_for_optcon(x_reference, u_reference):
             rt[:,t] = cost.grad2_J(u_optimal[:,t,k], u_reference[:,t])
 
         qT = cost.grad_terminal_cost(x_optimal[:,TT-1,k], x_reference[:,TT-1])
-        # Lambda[:,TT-1] = qT
-
+        Lambda[:,TT-1] = qT
         ########## Solve the costate equation [S20C5]
-        #for t in reversed(range(TT-1)):
-        #    Lambda[:,t] = A[:,:,t].T @ Lambda[:,t+1] + qt[:,t]
-        #    if(t%100 == 0):
-        #        print("\nLambda: ", Lambda[:,t])
+        # Compute the effects of the inputs evolution on cost (rt)
+        # and on dynamics (B*Lambda)
+        for t in reversed(range(TT-1)):
+            Lambda[:,t] = A[:,:,t].T @ Lambda[:,t+1] + qt[:,t]
+            GradJ_u[:,t] = B[:,:,t].T @ Lambda[:,t+1] + rt[:,t]
 
         ########## Compute the descent direction [S8C9]
         # Adopt Regularization methods
@@ -77,7 +78,7 @@ def newton_for_optcon(x_reference, u_reference):
         # To compute the descent direction, the affine LQR must be solved
         K_star, sigma_star, delta_u =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
 
-        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u, qt, qT, l[k], K_star, sigma_star, step_size_0=1)
+        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u, GradJ_u, l[k], K_star, sigma_star, step_size_0=1)
 
         for t in range(TT-1): 
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_star[:,:,t] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t]
@@ -98,7 +99,7 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
     
 
     delta_x = np.zeros((x_size,TT))
-    delta_u = np.zeros((u_size,TT))
+    delta_u = np.zeros((u_size,TT-1))
 
     delta_x[:,0] = x_optimal[:,0] - x_reference[:,0]
 

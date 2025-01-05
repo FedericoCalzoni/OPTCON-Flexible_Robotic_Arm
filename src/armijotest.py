@@ -6,13 +6,13 @@ import dynamics as dyn
 
 
 
-def armijo_v2(x_init, x_reference, u_init, u_reference, delta_u, qt, qT, J, Kt, sigma_t, step_size_0=0.1, max_iterations=10):
+def armijo_v2(x_init, x_reference, u_init, u_reference, delta_u, gradJ, J, Kt, sigma_t, step_size_0=0.1, max_iterations=10):
     # Estraggo le dimensioni di x ed u (4 e 4) ed il numero di iterazioni in una traiettoria (t_sim) 
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
 
     # Definisco la risoluzione nei plot; ogni curva è composta da 50 punti
-    resolution = 50   
+    resolution = 25   
 
     ## Inizializzo le seguenti variabili:
     #  -    step_size: gamma che si prende in esame all'iterazione i-esima
@@ -29,13 +29,15 @@ def armijo_v2(x_init, x_reference, u_init, u_reference, delta_u, qt, qT, J, Kt, 
 
     x_temp = np.zeros((x_size,horizon))
     u_temp = np.zeros((u_size,horizon))
-    
-    q_trajectory = np.hstack((qt, qT.reshape(-1, 1)))
-    #descent = q_trajectory.ravel() @ delta_u.ravel()
-    descent = np.zeros((horizon,1))
-    for t in range(horizon):
-        descent[t] = q_trajectory[:,t].T @ delta_u[:,t]
 
+    #descent = q_trajectory.ravel() @ delta_u.ravel()
+    #descent = np.zeros((horizon-1,1))
+    #for t in range(horizon-1):
+    #    descent[t] = gradJ[:,t] * delta_u[:,t]
+
+    descent = 0
+    for t in range(horizon-1):
+        descent = descent + gradJ[:,t] * delta_u[:,t]
 
 
     for k in range(max_iterations):
@@ -78,8 +80,13 @@ def armijo_v2(x_init, x_reference, u_init, u_reference, delta_u, qt, qT, J, Kt, 
             
         J_plot[j] = cost.J_Function(x_temp_sec[:,:,j], u_temp_sec[:,:,j], x_reference, u_reference, "LQR")
     
-    plt.plot(gamma, J_plot, label='Armijo Line Search')
-    plt.scatter(step_sizes, costs_armijo, color='red', label='Armijo Steps')
+
+    
+    plt.plot(gamma, J+c*gamma*descent, color='red', label='Armijo Condition')
+    plt.plot(gamma, J+gamma*descent, color='black', label='Tangent Line')
+    plt.plot(gamma, J_plot, label='Cost Evolution')
+    plt.scatter(step_sizes, costs_armijo, color='blue', label='Armijo Steps')
+    plt.legend()
     plt.show()
 
 
