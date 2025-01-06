@@ -51,6 +51,7 @@ def solve_ltv_LQR(x0, A_trajectory, B_trajectory, Q_trajectory, R_trajectory, S_
         P[:,:,t] = Qt + At.T @ Pt_plus_1 @ At - K_star[:,:,t].T @ (Rt + Bt.T @ Pt_plus_1 @ Bt) @ K_star[:,:,t]
         # P[:,:,t] = Qt + At.T @ Pt_plus_1 @ At - (At.T @ Pt_plus_1 @ Bt) @ K_star[:,:,t]
         print(f"t: {t}, P: {P[:,:,t]}")
+        
     # Forward pass
     print("Forward iteration")   
     delta_x_star[:, 0] = x0   
@@ -75,28 +76,23 @@ def compute_LQR_trajectory(x_trajectory, u_trajectory, step_size = 0.1, max_iter
     q_trajectory = np.zeros((x_size, T))
     r_trajectory = np.zeros((u_size, T))
     
+    x0 = x_trajectory[:,0]
+    
     x_opt_trajectory = np.repeat(x_trajectory[:, :, np.newaxis] , max_iter+1, axis=2)
     u_opt_trajectory = np.repeat(u_trajectory[:, :, np.newaxis] , max_iter+1, axis=2)
     
     x_opt_trajectory = np.zeros((x_size, T, max_iter+1))
     u_opt_trajectory = np.zeros((u_size, T, max_iter+1))
     
-    x0 = x_trajectory[:,0]
+    
     
     for k in range(max_iter):      
         # Linearize the system dynamics and cost function around the current trajectory    
         for t in range(T-1):   
             
             # Linearization of the dynamics
-            dfx = dyn.jacobian_x_dot_wrt_x(x_trajectory[:,t], u_trajectory[:,t])
-            dfx[0,2] = 0
-            dfx[0,3] = 0
-            dfx[1,2] = 0
-            dfx[1,3] = 0
-            dfu = dyn.jacobian_x_dot_wrt_u(x_trajectory[:,t])
-            
-            A_trajectory[:,:,t] = dfx
-            B_trajectory[:,:,t] = dfu
+            A_trajectory[:,:,t] = dyn.jacobian_x_dot_wrt_x(x_trajectory[:,t], u_trajectory[:,t])
+            B_trajectory[:,:,t] = dyn.jacobian_x_dot_wrt_u(x_trajectory[:,t])
             
             # Cost function derivatives
             Q_trajectory[:,:,t] = cost.hessian1_J()
@@ -141,9 +137,7 @@ def compute_LQR_trajectory(x_trajectory, u_trajectory, step_size = 0.1, max_iter
             print("LQR Converged")
             break
         
-    x_trajectory = x_opt_trajectory[:,:,k+1]
-    u_trajectory = u_opt_trajectory[:,:,k+1]    
-    return x_trajectory, u_trajectory
+    return x_opt_trajectory[:,:,k+1], u_opt_trajectory[:,:,k+1]  
 
 
 def check_system_stability(A_trajectory):

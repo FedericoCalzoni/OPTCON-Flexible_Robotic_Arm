@@ -30,7 +30,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
     u_size = u_reference.shape[0]
 
     x_update = np.zeros((x_size,horizon))
-    u_update = np.zeros((u_size,horizon))
+    u_update = np.zeros((u_size,horizon-1))
     
     for i in range(max_iterations):
         x_update[:,:] = x_trajectory
@@ -71,10 +71,10 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         #print(f'Step size at iter {k+1} = {step_size}')
     
 
-    if Arm_plot == True and iteration%Arm_plot_every_k_iter == 0:
+    if Arm_plot == True:
         # Armijo Plot
         x_temp_sec = np.zeros((x_size, horizon, resolution))
-        u_temp_sec = np.zeros((u_size, horizon, resolution))
+        u_temp_sec = np.zeros((u_size, horizon-1, resolution))
         J_plot = np.zeros(resolution)
    
         for j in range(resolution):

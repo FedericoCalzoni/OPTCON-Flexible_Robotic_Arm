@@ -203,14 +203,8 @@ def compute_LQR_trajectory(x_trajectory, u_trajectory, step_size = 0.1, max_iter
         for t in range(T-1):   
             print("Iteration: ", k, " Time step: ", t)
             
-            dtheta1 = x_trajectory[0,t]
-            dtheta2 = x_trajectory[1,t]
-            theta1 = x_trajectory[2,t]
-            theta2 = x_trajectory[3,t]
-            tau1 = u_trajectory[0,t]
-            
-            dfx = dyn.jacobian_x_dot_wrt_x(dtheta1, dtheta2, theta1, theta2, tau1)
-            dfu = dyn.jacobian_x_dot_wrt_u(theta2)
+            dfx = dyn.jacobian_x_dot_wrt_x(x_trajectory[:,t], u_trajectory[:,t])
+            dfu = dyn.jacobian_x_dot_wrt_u(x_trajectory[:,t])
             
             A_trajectory[:,:,t] = dfx.T
             B_trajectory[:,:,t] = dfu.T

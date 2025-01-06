@@ -13,17 +13,17 @@ F1 = 0.1
 F2 = 0.1
 
 t_i = 0
-t_f = 10
+t_f = 20
 dt = 1e-2
 
 # Cost Function parameters
-Qt = np.diag([1, 1, 1, 1])
-Rt = np.diag([1])
-QT = np.diag([1, 1, 1, 1])
+Qt = np.diag([1, 1, 2, 2])*1e3
+Rt = np.diag([2])
+QT = np.diag([1, 1, 5, 5])*1e4
 
 
 # Armijo parameters
 c = 0.5
 beta = 0.7
-Arm_plot = False
+Arm_plot = True
 Arm_plot_every_k_iter = 4 

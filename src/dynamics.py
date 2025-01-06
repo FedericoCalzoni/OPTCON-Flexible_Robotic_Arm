@@ -31,20 +31,15 @@ def compute_gravity(theta1, theta2):
     return np.array([[g1], [g2]])
 
 def dynamics(x, u):
-
     dtheta1 = x[0].item()
     dtheta2 = x[1].item()
     theta1 = x[2].item()
     theta2 = x[3].item()
-
     tau1 = u[0].item()
+    # tau2 = u[1].item()
     
-    xx = np.array([dtheta1, dtheta2, theta1, theta2])
-    xx = xx[:,None]
-    uu = np.array([[tau1],
-                   [0],
-                   [0],
-                   [0]])
+    x_k = np.array([[dtheta1], [dtheta2], [theta1], [theta2]])
+    u_k = np.array([[tau1],[0],[0],[0]])
 
     # Compute matrices
     M = compute_inertia_matrix(theta2)
@@ -72,13 +67,13 @@ def dynamics(x, u):
         [G],
         [np.zeros((2, 1))]
     ])
-    ct = - M_inv_ext @ (C_ext + G_ext)
-
-    x_dot = A @ xx + B @ uu + ct
     
-    x_new = (xx + dt * x_dot).flatten()
+    c = - M_inv_ext @ (C_ext + G_ext)
+
+    dx = A @ x_k + B @ u_k + c
+    x_new = x_k + dt * dx
         
-    return x_new
+    return x_new.flatten()
 
 def jacobian_gravity(theta1, theta2):
     JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)

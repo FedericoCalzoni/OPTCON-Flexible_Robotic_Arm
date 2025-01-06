@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import transpose as Tr
 from parameters import Qt, Rt, QT
 
 def J_Function(x_trajectory, u_trajectory, x_reference, u_reference, type):

@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 
 def main():
     
-    z_0_eq1 = np.array([[-np.pi/3], [+np.pi/3], [-8]])
-    z_0_eq2 = np.array([[np.pi/3], [-np.pi/3], [8]])
+    z_0_eq1 = np.array([[-np.pi/2], [+np.pi/2], [-40]])
+    z_0_eq2 = np.array([[np.pi/2], [-np.pi/2], [+40]])
     equilibria_1 = newton_method(z_0_eq1, jacobian_gravity)
     equilibria_2 = newton_method(z_0_eq2, jacobian_gravity)
     eq1_theta1 = equilibria_1[0].item()
@@ -47,9 +47,15 @@ def main():
     #     x_trajectory[:, i+1] = dyn.dynamics(x_trajectory[:, i], u_0)
     
     k_eq = eq1_tau1 / np.sin(eq1_theta1)
-    smooth_percentage = 0.2
+    smooth_percentage = 0
     x_reference, u_reference = reference_trajectory.generate_trajectory(param.t_f, x_0.flatten(), x_f.flatten(), eq1_tau1, eq2_tau1, smooth_percentage)    
     # reference_trajectory.plot_trajectory(x_reference, u_reference, dt=param.dt)
+    
+    plt.plot(x_reference[2,:], label='theta1')
+    plt.plot(x_reference[3,:], label='theta2')
+    plt.plot(u_reference[0,:], label='tau1')
+    plt.legend()
+    plt.show()
     
     
     T = x_reference.shape[1]
@@ -63,7 +69,7 @@ def main():
     # x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
     
     # x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
-    x_trajectory, u_trajectory, l = newton_OC(x_reference, u_reference)
+    x_trajectory, u_trajectory = newton_OC(x_reference, u_reference)
     # Visualize the simulation
     # matrix_x_history = np.hstack(x_trajectory)
     frame_skip = int(1/(1000*param.dt))
