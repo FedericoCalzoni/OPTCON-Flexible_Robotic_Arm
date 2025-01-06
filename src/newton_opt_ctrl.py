@@ -7,9 +7,9 @@ from numpy.linalg import inv
 import armijotest as armijo
 
 def newton_for_optcon(x_reference, u_reference):
-    print('\t   -----------------------------------------\n \
-          Starting Newton Method for Optimal Control\n \
-          ----------------------------------------- ')
+    print('\t\t-----------------------------------------\n \
+           \tStarting Newton Method for Optimal Control\n \
+           \t-----------------------------------------')
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]
@@ -73,8 +73,8 @@ def newton_for_optcon(x_reference, u_reference):
         for t in range(TT-1):
             A[:,:,t] = dyn.jacobian_x_new_wrt_x(x_optimal[:,t,k], u_optimal[:,t,k])
             B[:,:,t] = dyn.jacobian_x_new_wrt_u(x_optimal[:,t,k])
-            qt[:,t] = cost.grad1_J(x_optimal[:,t,k], x_reference[:,t])
-            rt[:,t] = cost.grad2_J(u_optimal[:,t,k], u_reference[:,t])
+            qt[:,t] = cost.grad1_J(x_optimal[:,t,k], x_reference[:,t], t)
+            rt[:,t] = cost.grad2_J(u_optimal[:,t,k], u_reference[:,t], t)
         qT = cost.grad_terminal_cost(x_optimal[:,-1,k], x_reference[:,-1])
         
         ########## Solve the costate equation [S20C5]
@@ -89,14 +89,14 @@ def newton_for_optcon(x_reference, u_reference):
         # Adopt Regularization methods
         if k < 3:
             for t in range(TT-1):
-                Qt_Star[:,:,t] = cost.hessian1_J()           
-                Rt_Star[:,:,t] = cost.hessian2_J()              
+                Qt_Star[:,:,t] = cost.hessian1_J(t)           
+                Rt_Star[:,:,t] = cost.hessian2_J(t)              
                 St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k])  
             QT_Star = cost.hessian_terminal_cost()
         else :
             for t in range(TT-1):
-                Qt_Star[:,:,t] = cost.hessian1_J() #+ dyn.hessian_x_new_wrt_x(x_optimal[:,t,k], u_optimal[:,t,k])@Lambda[:,t+1]         
-                Rt_Star[:,:,t] = cost.hessian2_J() #+ dyn.hessian_x_new_wrt_u()@Lambda[:,t+1]              
+                Qt_Star[:,:,t] = cost.hessian1_J(t) #+ dyn.hessian_x_new_wrt_x(x_optimal[:,t,k], u_optimal[:,t,k])@Lambda[:,t+1]         
+                Rt_Star[:,:,t] = cost.hessian2_J(t) #+ dyn.hessian_x_new_wrt_u()@Lambda[:,t+1]              
                 St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k]);  
             QT_Star = cost.hessian_terminal_cost()
 
@@ -106,7 +106,7 @@ def newton_for_optcon(x_reference, u_reference):
         K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  \
             Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, \
                               Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
-        # Plot function outputs
+        # Plot Affine_LQR outputs
         second_plot_set(k, sigma_star, delta_u, K_Star)
         
         # Compute the proper stepsize

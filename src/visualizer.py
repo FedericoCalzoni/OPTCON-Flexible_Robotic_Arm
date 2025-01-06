@@ -19,7 +19,7 @@ def animate_double_pendulum(x_history):
     L2 = pm.L2
 
     num_frames = x_history.shape[0]
-    frame_skip = 10
+    frame_skip = int(num_frames * dt)
     frame_skip += 1
     num_steps = num_frames // frame_skip
     
