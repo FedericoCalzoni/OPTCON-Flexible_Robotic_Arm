@@ -8,7 +8,7 @@ import dynamics as dyn
 
 def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, step_size_0=0.1):
 
-    max_iterations = 10
+    max_iterations = 100
     # Estraggo le dimensioni di x ed u (4 e 4) ed il numero di iterazioni in una traiettoria (t_sim) 
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
@@ -71,7 +71,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         #print(f'Step size at iter {k+1} = {step_size}')
     
 
-    if Arm_plot == True and iteration%Arm_plot_every_k_iter == 0:
+    if Arm_plot == True and iteration%Arm_plot_every_k_iter == 0 and iteration!=0:
         # Armijo Plot
         x_temp_sec = np.zeros((x_size, horizon, resolution))
         u_temp_sec = np.zeros((u_size, horizon, resolution))
