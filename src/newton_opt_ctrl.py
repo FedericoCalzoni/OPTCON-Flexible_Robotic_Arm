@@ -7,6 +7,9 @@ from numpy.linalg import inv
 import armijotest as armijo
 
 def newton_for_optcon(x_reference, u_reference):
+    print('\t   -----------------------------------------\n \
+          Starting Newton Method for Optimal Control\n \
+          ----------------------------------------- ')
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]
@@ -36,7 +39,7 @@ def newton_for_optcon(x_reference, u_reference):
     A = np.zeros((x_size,x_size,TT-1))
     B = np.zeros((x_size,u_size,TT-1))
 
-    
+    newton_finished = False
 
     # Inizializzo la prima istanza della traiettoria ottimale
     for t in range(TT):
@@ -45,70 +48,70 @@ def newton_for_optcon(x_reference, u_reference):
 
     # Applichiamo il metodo di Newton per calcolare la traiettoria ottimale
     for k in range(max_iterations):
-        if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
-            plt.figure()
-            for i in range(4):
-                plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
-                plt.plot(x_reference[i,:], color = 'orange', label =f'x_reference[{i+1}]')
-            for i in range(u_size):
-                plt.plot(u_optimal[i,:,k], color = 'purple', label =f'u_optimal[{i+1}]')
-                plt.plot(u_reference[i,:],color = 'yellow', label =f'u_reference[{i+1}]')
-            plt.grid()
-            plt.legend()
-            plt.title(f'State Input Evolution\n$Iteration = {k}$')
-            plt.show()
-
-
-        x_optimal[:,0, k+1] = x_initial_guess
-
-        # Calcoliamo il costo della traiettoria di partenza. Alla fine di questo ciclo, 
-        #   lo confrontiamo con il costo della traiettoria calcolata durante il ciclo.
+        first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
+        
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
-        
 
         
+        if k == 0:
+            print(f"\nIteration: {k} \tCost: {l[k]}")
+
+        else: 
+            # Controllo se la terminal condition è soddisfatta
+            relative_cost_reduction = np.abs(l[k] - l[k-1])/l[k-1]
+            print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tRelative cost reduction:{relative_cost_reduction}")
+            
+            if relative_cost_reduction < 1e-10:
+                break
+        
+        
+        
+        # Inizializzo la x0 della prossima iterazione 
+        x_optimal[:,0, k+1] = x_initial_guess
+        
+        # Calcolo le jacobiane di dinamica e costo
         for t in range(TT-1):
             A[:,:,t] = dyn.jacobian_x_new_wrt_x(x_optimal[:,t,k], u_optimal[:,t,k])
             B[:,:,t] = dyn.jacobian_x_new_wrt_u(x_optimal[:,t,k])
             qt[:,t] = cost.grad1_J(x_optimal[:,t,k], x_reference[:,t])
             rt[:,t] = cost.grad2_J(u_optimal[:,t,k], u_reference[:,t])
-
-        qT = cost.grad_terminal_cost(x_optimal[:,TT-1,k], x_reference[:,TT-1])
-        Lambda[:,TT-1] = qT
+        qT = cost.grad_terminal_cost(x_optimal[:,-1,k], x_reference[:,-1])
+        
         ########## Solve the costate equation [S20C5]
         # Compute the effects of the inputs evolution on cost (rt)
         # and on dynamics (B*Lambda)
+        Lambda[:,-1] = qT
         for t in reversed(range(TT-1)):
             Lambda[:,t] = A[:,:,t].T @ Lambda[:,t+1] + qt[:,t]
             GradJ_u[:,t] = B[:,:,t].T @ Lambda[:,t+1] + rt[:,t]
 
         ########## Compute the descent direction [S8C9]
         # Adopt Regularization methods
-        for t in range(TT-1):
-            Qt_Star[:,:,t] = cost.hessian1_J()           
-            
-            Rt_Star[:,:,t] = cost.hessian2_J()              
-            
-            St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k])
-            
-        QT_Star = cost.hessian_terminal_cost()
+        if k < 3:
+            for t in range(TT-1):
+                Qt_Star[:,:,t] = cost.hessian1_J()           
+                Rt_Star[:,:,t] = cost.hessian2_J()              
+                St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k])  
+            QT_Star = cost.hessian_terminal_cost()
+        else :
+            for t in range(TT-1):
+                Qt_Star[:,:,t] = cost.hessian1_J() #+ dyn.hessian_x_new_wrt_x(x_optimal[:,t,k], u_optimal[:,t,k])@Lambda[:,t+1]         
+                Rt_Star[:,:,t] = cost.hessian2_J() #+ dyn.hessian_x_new_wrt_u()@Lambda[:,t+1]              
+                St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k]);  
+            QT_Star = cost.hessian_terminal_cost()
 
 
         ########## Compute the optimal control input [S18C9]
         # To compute the descent direction, the affine LQR must be solved
-        K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
-        PlotMe = True
-        if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
-            plt.figure()
-            plt.title(f'Affine LQR solution at\nIteration {k}')
-            for i in range(u_size):
-                plt.plot(sigma_star[i,:, k], color = 'red', label = f'Sigma[{i}]')
-                plt.plot(delta_u[i,:, k], color = 'purple', label = f'\Delta_u[{i}]')
-                for j in range(x_size):
-                    plt.plot(K_Star[i, j, :, k], color = 'blue', label = f'K[{i} , {j}]')
-            plt.grid()
-            plt.legend()
-            plt.show()
+        K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  \
+            Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, \
+                              Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
+        # Plot function outputs
+        second_plot_set(k, sigma_star, delta_u, K_Star)
+        
+        # Compute the proper stepsize
+        #if k == 5:
+            #breakpoint()
         gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
 
         #gamma = 0.1
@@ -117,15 +120,10 @@ def newton_for_optcon(x_reference, u_reference):
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_Star[:,:,t, k] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t, k]
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
-        l[k+1] = cost.J_Function(x_optimal[:,:,k+1], u_optimal[:,:,k+1], x_reference, u_reference, "LQR")
-        print(f"\nIteration: {k+1} Cost: {l[k+1]}   Cost reduction: {l[k+1] - l[k]}")
-
-        if np.abs(l[k+1] - l[k]) < 1e-6:
-            break
-    
-
-    print(f'Dai cazzo ho finito alla {k+1}^ iterazione')
-    return x_optimal[:,:,k+1], u_optimal[:,:,k+1], l[:k+1]
+    print(f'Ho finito alla {k}^ iterazione')
+    newton_finished = True
+    first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
+    return x_optimal[:,:,k], u_optimal[:,:,k], l[:k]
 
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
@@ -133,7 +131,6 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
     u_size = r.shape[0]
     TT = x_reference.shape[1]
     
-
     delta_x = np.zeros((x_size,TT))
     delta_u = np.zeros((u_size,TT-1))
 
@@ -183,10 +180,50 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
         p[:,t] = pt.flatten()
         P[:,:,t] = Pt 
 
-
     for t in range(TT-1):
         delta_u[:,t] = K[:,:,t] @ delta_x[:,t] + Sigma[:,t]
         delta_x[:,t+1] = A[:,:,t] @ delta_x[:,t] + B[:,:,t] @ delta_u[:,t]
 
-
     return K, Sigma, delta_u
+
+
+
+def first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished):
+    x_size = x_optimal.shape[0]
+    u_size = u_optimal.shape[0]
+    if (pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0) \
+        or (pm.plot_states_at_last_iteration and newton_finished):
+            plt.figure()
+            for i in range(x_size):
+                plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
+                plt.plot(x_reference[i,:], color = 'orange', label =f'x_reference[{i+1}]')
+            plt.grid()
+            plt.legend()
+            plt.title(f'State Evolution\n$Iteration = {k}$')
+            plt.show()
+
+            plt.figure()
+            for i in range(u_size):
+                plt.plot(u_optimal[i,:,k], color = 'purple', label =f'u_optimal[{i+1}]')
+                plt.plot(u_reference[i,:],color = 'yellow', label =f'u_reference[{i+1}]')
+            plt.grid()
+            plt.legend()
+            plt.title(f'Input Evolution\n$Iteration = {k}$')
+            plt.show()
+
+
+
+def second_plot_set(k, sigma_star, delta_u, K_Star):
+    if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
+            x_size = K_Star.shape[1]
+            u_size = K_Star.shape[0]
+            plt.figure()
+            plt.title(f'Affine LQR solution at\nIteration {k}')
+            for i in range(u_size):
+                plt.plot(sigma_star[i,:, k], color = 'red', label = f'Sigma[{i}]')
+                plt.plot(delta_u[i,:, k], color = 'purple', label = f'\Delta_u[{i}]')
+                for j in range(x_size):
+                    plt.plot(K_Star[i, j, :, k], color = 'blue', label = f'K[{i} , {j}]')
+            plt.grid()
+            plt.legend()
+            plt.show()

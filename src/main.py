@@ -81,8 +81,7 @@ def main():
     #
 #
     #x_trajectory = x_debug
-    frame_skip = int(1/(1000*param.dt))
-    anim(x_trajectory.T, param.L1, param.L2, frame_skip)
+    anim(x_trajectory.T)
 
 if __name__ == "__main__":
     main()

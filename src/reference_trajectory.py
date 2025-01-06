@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
-import parameters as pm
+import parameters as param
 
 def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2, smooth_period=0):
-    total_time_steps = int(tf / pm.dt)
+    total_time_steps = int(tf / param.dt)
     time = np.linspace(0, tf, total_time_steps)
     x_size = x_eq2.shape[0]
     
@@ -13,8 +13,8 @@ def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2, smooth_period=0):
     u_reference = np.zeros((1, total_time_steps))
 
     # Create the cubic spline for the middle region
-    t1 = tf / (2*pm.dt) - tf*smooth_period / (2*pm.dt)
-    t2 = tf / (2*pm.dt) + tf*smooth_period / (2*pm.dt)
+    t1 = tf / (2*param.dt) - tf*smooth_period / (2*param.dt)
+    t2 = tf / (2*param.dt) + tf*smooth_period / (2*param.dt)
   
     for i in range(x_size):
         # Create a cubic spline to interpolate between x_eq1 and x_eq2
