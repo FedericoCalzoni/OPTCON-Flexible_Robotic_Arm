@@ -10,11 +10,12 @@ import reference_trajectory
 import LQR
 from newton_opt_ctrl import newton_for_optcon as newton_OC
 import matplotlib.pyplot as plt
+from mpc import compute_mpc
 
 def main():
     
-    z_0_eq1 = np.array([[-np.pi/2-0.1], [+np.pi/2-0.1], [-40]])
-    z_0_eq2 = np.array([[np.pi/2], [-np.pi/2], [40]])
+    z_0_eq1 = np.array([[-np.pi/3], [+np.pi/3], [-30]])
+    z_0_eq2 = np.array([[np.pi/3], [-np.pi/3], [30]])
     equilibria_1 = newton_method(z_0_eq1, jacobian_gravity)
     equilibria_2 = newton_method(z_0_eq2, jacobian_gravity)
     eq1_theta1 = equilibria_1[0].item()
@@ -63,7 +64,7 @@ def main():
     # x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
     
     # x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
-    x_trajectory, u_trajectory, l = newton_OC(x_reference, u_reference)
+    x_gen, u_gen, l = newton_OC(x_reference, u_reference)
     # Visualize the simulation
     # matrix_x_history = np.hstack(x_trajectory)
 
@@ -72,14 +73,19 @@ def main():
     #A_debug = np.zeros((x_size, x_size, time_intervals-1))
     #B_debug = np.zeros((x_size, u_size, time_intervals-1))
     #x_debug[:, 0] = x_0.flatten()
-#
+    #
     #for t in range (time_intervals-2):
     #    u_debug[:, t] = u_0.flatten()
     #    A_debug[:,:,t] = dyn.jacobian_x_new_wrt_x(x_debug[:,t], u_debug[:,t])
     #    B_debug[:,:,t] = dyn.jacobian_x_new_wrt_u(x_debug[:,t])
     #    x_debug[:, t+1] = A_debug[:,:,t] @ x_debug[:,t] + B_debug[:,:,t] @ u_debug[:,t]
     #
-#
+    #
+
+    # MPC
+    x_trajectory, u_trajectory = compute_mpc(x_gen, u_gen)
+
+
     #x_trajectory = x_debug
     anim(x_trajectory.T)
 

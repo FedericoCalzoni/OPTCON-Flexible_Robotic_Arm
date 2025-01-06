@@ -14,7 +14,8 @@ F2 = 0.1
 
 t_i = 0
 t_f = 5
-dt = 1e-3
+dt = 1e-2
+
 
 # Cost Function parameters
 #Qt = np.diag([1, 1, 10, 10])
@@ -34,3 +35,8 @@ Arm_plot_every_k_iter = 5
 Newton_Optcon_Plots = False
 Newton_Plot_every_k_iterations = 3
 plot_states_at_last_iteration = True
+
+# MPC parameters
+T_pred = 5
+umax=50
+umin=-umax
