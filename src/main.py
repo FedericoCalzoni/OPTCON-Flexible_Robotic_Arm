@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 
 def main():
     
-    z_0_eq1 = np.array([[-np.pi/3], [+np.pi/3], [-8]])
-    z_0_eq2 = np.array([[np.pi/3], [-np.pi/3], [8]])
+    z_0_eq1 = np.array([[-np.pi/2-0.1], [+np.pi/2-0.1], [-40]])
+    z_0_eq2 = np.array([[np.pi/2], [-np.pi/2], [40]])
     equilibria_1 = newton_method(z_0_eq1, jacobian_gravity)
     equilibria_2 = newton_method(z_0_eq2, jacobian_gravity)
     eq1_theta1 = equilibria_1[0].item()
