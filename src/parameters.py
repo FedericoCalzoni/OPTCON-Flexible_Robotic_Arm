@@ -15,7 +15,7 @@ def smooth_transition(t, start, end):
     width = end - start
     return 1 / (1 + np.exp(-10 * (t - (start + width / 2)) / width))
 
-
+optimal_trajectory_given = False
 # Dynamics parameters
 M1 = 2
 M2 = 2
@@ -31,7 +31,7 @@ F2 = 0.1
 
 t_i = 0
 t_f = 10
-dt = 1e-3
+dt = 1e-2
 TT = int((t_f - t_i)/dt)
 
 

@@ -3,36 +3,42 @@ import numpy as np
 import os
 import re
 
-def find_latest_versioned_file(base_name, directory="."):
-    """
-    Finds the latest versioned file based on version number in the filename.
-    
-    Parameters:
-        base_name (str): Base name of the file.
-        extension (str): File extension (e.g., ".npz").
-        directory (str): Directory to search for files.
+#################################
+##        Save Functions       ##
+#################################
 
+def save_optimal_trajectory(x_optimal, u_optimal):
+    """
+    Save the optimal trajectory data on a specified version of the file "Optimal_Trajectories".
+
+    Args:
+        x_optimal (NumPy.array): The optimal trajectory of the states.
+        u_optimal (NumPy.array): The optimal trajectory of the inputs.
     Returns:
-        str: Path to the latest versioned file, or None if no file is found.
+        None
+
+    Example:
+        >>> save_optimal_trajectory(x_opt, u_opt)
     """
+    file = "Optimal_Trajectory"
+    dir = "DataArchive"
+    save_file(x_optimal, u_optimal, base_name=file, directory=dir)
 
-    extension = '.npz'
-    # Regular expression to match filenames with version and timestamp
-    pattern = re.compile(rf"{base_name}_v(\d+)_\d{{8}}_\d{{6}}{re.escape(extension)}")
-    max_version = -1
-    latest_file = None
+def save_file(*args, base_name, directory):
+    base_dir = os.path.dirname(os.path.abspath(__file__))  
+    archive_dir = os.path.join(base_dir, '..', directory)
+    os.makedirs(archive_dir, exist_ok=True)
+    new_file_name = get_next_filename(base_name, archive_dir)
+    # Crea un dizionario con nomi dinamici per ogni argomento
+    saved_data = {}
 
-    # Iterate through files in the directory
-    for filename in os.listdir(directory):
-        match = pattern.match(filename)
-        if match:
-            version = int(match.group(1))  # Extract the version number
-            if version > max_version:
-                max_version = version
-                latest_file = os.path.join(directory, filename)
+    for i, arg in enumerate(args):
+        # Create dynamic keys
+        var_name = f'arg{i}'
+        saved_data[var_name] = arg
 
-    return latest_file
-
+    np.savez(new_file_name, **saved_data)
+    print(f"\nFile Saved:\t{base_name}\t in\t {directory}")
 
 def get_next_filename(base_name, directory="."):
     """
@@ -44,7 +50,7 @@ def get_next_filename(base_name, directory="."):
         directory (str): Directory to search for existing files.
 
     Returns:
-        int: The version of the last file found in the archive
+        str: The properly formatted file name to be written
     """
     
     extension = ".npz"
@@ -64,28 +70,89 @@ def get_next_filename(base_name, directory="."):
     new_file_name = f"{directory}\\{base_name}_v{new_version}_{timestamp}{extension}"
     return new_file_name
 
+#################################
+##        Load Functions       ##
+#################################
 
+def load_optimal_trajectory(version = 'latest'):
+    """
+    Loads the optimal trajectory data from a specified version of the file.
 
+    This function retrieves the optimal state (`x_optimal`) and control (`u_optimal`) trajectories
+    from a file stored in a predefined directory. The version of the file can be specified, and the
+    default is the latest version.
 
-def save_optimal_trajectory(x_optimal, u_optimal):
+    Args:
+        version (str, optional): The version of the file to load. Defaults to 'latest'.
+
+    Returns:
+        tuple: A tuple containing:
+            - x_optimal (any): The optimal state trajectory loaded from the file.
+            - u_optimal (any): The optimal control trajectory loaded from the file.
+
+    Raises:
+        FileNotFoundError: If the file specified by the parameters is not found.
+        KeyError: If the expected keys ('arg0', 'arg1') are not present in the loaded file.
+        Exception: For other unforeseen errors during file loading or processing.
+
+    Example:
+        >>> x_opt, u_opt = load_optimal_trajectory(version='3')
+    """
     file = "Optimal_Trajectory"
     dir = "DataArchive"
-    save_file(x_optimal, u_optimal, base_name=file, directory=dir)
 
-def save_file(*args, base_name, directory):
+    trajectories = load_file(file, dir, version)
+    
+    for arg_name in trajectories:
+        match arg_name:
+            case 'arg0':
+                x_optimal = trajectories[arg_name]
+            case 'arg1':
+                u_optimal = trajectories[arg_name]
+    return x_optimal, u_optimal
+
+def load_file(base_name, directory, version = 'latest'):
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     archive_dir = os.path.join(base_dir, '..', directory)
     os.makedirs(archive_dir, exist_ok=True)
-    new_file_name = get_next_filename(base_name, archive_dir)
-    # Crea un dizionario con nomi dinamici per ogni argomento
-    saved_data = {}
+    file_name_to_be_loaded  = get_filename_to_load(base_name, archive_dir, version)
+    vars = np.load(file_name_to_be_loaded)
 
-    for i, arg in enumerate(args):
-        # Create dynamic keys
-        var_name = f'arg{i}'
-        saved_data[var_name] = arg
+    return vars
 
-    np.savez(new_file_name, **saved_data)
+def get_filename_to_load(base_name, directory, version):
+    extension = ".npz"
+    file_name_to_load = None
+    pattern = rf"{re.escape(base_name)}_v(\d+)_.*{re.escape(extension)}"
+    
+    # Trova tutti i file nella directory che corrispondono al pattern
+    versions = []
+    for file_name in os.listdir(directory):
+        match = re.match(pattern, file_name)
+        if match:
+            versions.append(int(match.group(1)))  # Estrai il numero di versione
 
+    try:
+        if version == 'latest':
+            found_version = max(versions, default=0)
+            if found_version != 0:
+                print(f"Loading {base_name}, version {found_version}, from dir {directory}")
+            else:
+                raise ValueError(f"\nThere are no available version of {base_name} in {directory}.")
 
+        elif version != 'latest':
+            if int(version) in versions:
+                found_version = versions[int(version)-1]
+                print(f"Loading {base_name}, version {found_version}, from dir {directory}")
+            else:
+                raise ValueError(f"\nNo valid version '{version}' of {base_name} found in {directory}.")        
+    except ValueError as e:
+        print(f"Loading File Error: {e}") 
+    else:
+        second_pattern = rf"{re.escape(base_name)}_v{found_version}_.*{re.escape(extension)}"
+        for file_name in os.listdir(directory):
+            if re.match(second_pattern, file_name):
+                file_name_to_load = os.path.join(directory, file_name)
+                break
 
+    return file_name_to_load
