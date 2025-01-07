@@ -11,6 +11,7 @@ import LQR
 from newton_opt_ctrl import newton_for_optcon as newton_OC
 import matplotlib.pyplot as plt
 from mpc import compute_mpc
+import pickle
 
 def main():
     
@@ -81,6 +82,16 @@ def main():
     #    x_debug[:, t+1] = A_debug[:,:,t] @ x_debug[:,t] + B_debug[:,:,t] @ u_debug[:,t]
     #
     #
+    
+    # Save both arrays to a file
+    with open('arrays.pkl', 'wb') as file:
+        pickle.dump((x_gen, u_gen), file)
+
+    print("Arrays saved.")
+
+    # Load the arrays back from the file
+    with open('Optimal_Trajectories.pkl', 'rb') as file:
+        x_gen, u_gen = pickle.load(file)
 
     # MPC
     x_trajectory, u_trajectory = compute_mpc(x_gen, u_gen)
