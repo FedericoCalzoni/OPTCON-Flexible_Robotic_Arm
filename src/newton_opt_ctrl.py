@@ -7,9 +7,10 @@ from numpy.linalg import inv
 import armijotest as armijo
 
 def newton_for_optcon(x_reference, u_reference):
-    print('\t\t-----------------------------------------\n \
-           \tStarting Newton Method for Optimal Control\n \
-           \t-----------------------------------------')
+    print('\n\n\
+         \t\t--------------------------------------------\n \
+           \tLaunching: Newton Method for Optimal Control\n \
+           \t--------------------------------------------')
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]

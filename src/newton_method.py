@@ -1,7 +1,8 @@
 import numpy as np
 from dynamics import compute_gravity
+from dynamics import jacobian_gravity as jacobian_function
 
-def newton_method(initial_guess, jacobian_function, step_size=1e-2, iterations=1000):
+def newton_method(initial_guess, step_size=1e-2, iterations=1000):
     """
     Applies Newton's method to find the root of a function.
 

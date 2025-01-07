@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 import parameters as param
+from parameters import smoooth_percentage as smooth_period
 
-def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2, smooth_period=0):
+def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2):
     total_time_steps = int(tf / param.dt)
     time = np.linspace(0, tf, total_time_steps)
     x_size = x_eq2.shape[0]

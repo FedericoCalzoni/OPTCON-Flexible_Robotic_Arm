@@ -33,7 +33,7 @@ t_i = 0
 t_f = 10
 dt = 1e-3
 TT = int((t_f - t_i)/dt)
-smoooth_percentage = 0.2
+
 
 # Cost Function parameters
 #Qt = np.diag([1, 1, 10, 10])
@@ -73,6 +73,10 @@ smoooth_percentage = 0.2
 #Qt = Qt_final
 #QT = Qt_final[:,:,-1]
 
+######################################
+##      Task 1 and 2 parameters     ##
+######################################     
+smoooth_percentage = 0.2
 transition_width = TT/8
 
 # Initialize matrices
@@ -136,3 +140,10 @@ Newton_Optcon_Plots = False
 Newton_Plot_every_k_iterations = 3
 plot_states_at_last_iteration = True
 
+
+################################
+##      Task 3 Parameters     ##
+################################  
+
+state_perturbation_percentage =0.1
+input_perturbation_percentage =0.1

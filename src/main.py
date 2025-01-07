@@ -8,8 +8,8 @@ from gradient_method import gradient_method
 import reference_trajectory
 from newton_opt_ctrl import newton_for_optcon as newton_OC
 import matplotlib.pyplot as plt
-import data_saver as ds
-import pickle
+import data_manager as dm
+
 
 
 def main():
@@ -48,15 +48,10 @@ def main():
     T = x_reference.shape[1]
 
     x_gen, u_gen, l = newton_OC(x_reference, u_reference)
-    with open('Optimal_Trajectories.pkl', 'wb') as file:
-        pickle.dump((x_gen, u_gen), file)
-    print("Arrays saved to 'arrays.pkl'.")
+    dm.save_optimal_trajectory(x_gen, u_gen)
+    anim(x_gen.T)
 
     
-
-
-
-    anim(x_gen.T)
 
 if __name__ == "__main__":
     main()

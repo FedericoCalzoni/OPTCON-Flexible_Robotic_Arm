@@ -18,8 +18,13 @@ def animate_double_pendulum(x_history):
     L1 = pm.L1
     L2 = pm.L2
 
+    if dt == 1e-3:
+        beta = 1
+    elif dt == 1e-2:
+        beta = 10
+        
     num_frames = x_history.shape[0]
-    frame_skip = int(num_frames * dt)
+    frame_skip = int(num_frames * dt/beta)
     frame_skip += 1
     num_steps = num_frames // frame_skip
     
