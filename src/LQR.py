@@ -2,6 +2,7 @@ import numpy as np
 import dynamics as dyn
 import cost
 import parameters as params
+import matplotlib.pyplot as plt
 
 def solve_ltv_LQR(x0, A_trajectory, B_trajectory, Q_trajectory, R_trajectory, S_trajectory, q_trajectory = None, r_trajectory = None):
     
@@ -78,6 +79,9 @@ def solve_ltv_LQR(x0, A_trajectory, B_trajectory, Q_trajectory, R_trajectory, S_
     
     # Solve Riccati equation
     for t in reversed(range(T-1)):
+        if t % 100 == 0:
+            # Debug: Use the following string as a break point 
+            aswfasfasfa = 1
         print("Reverse iteration: ", t)
         Qt = Q_trajectory[:,:,t]
         Rt = R_trajectory[:,:,t]
@@ -108,7 +112,7 @@ def solve_ltv_LQR(x0, A_trajectory, B_trajectory, Q_trajectory, R_trajectory, S_
         #     Mt_inv = np.linalg.inv(to_invert)
         #     cache = to_invert
         #     cache_inv = Mt_inv
-        
+
         Mt_inv = np.linalg.inv(Rt + Bt.T @ Pt_plus_1 @ Bt)
         mt = rt + Bt.T @ pt_plus_1
         
@@ -189,18 +193,20 @@ def compute_LQR_trajectory(x_trajectory, u_trajectory, step_size = 0.1, max_iter
     q_trajectory = np.zeros((x_size, T))
     r_trajectory = np.zeros((u_size, T))
     
-    x_opt_trajectory = np.repeat(x_trajectory[:, :, np.newaxis] , max_iter+1, axis=2)
-    u_opt_trajectory = np.repeat(u_trajectory[:, :, np.newaxis] , max_iter+1, axis=2)
-    
     x0 = x_trajectory[:,0]
+    u0 = u_trajectory[:,0]
+
+    x_opt_trajectory = np.tile(x0[:, np.newaxis, np.newaxis], (1, T, max_iter+1))
+    u_opt_trajectory = np.tile(u0[:, np.newaxis, np.newaxis], (1, T, max_iter+1))
     
-    print("SOLVE THIS")
-    #Q_trajectory[:,:,-1] = cost.hessian_terminal_cost()
     
-    q_trajectory[:,-1] = cost.grad_terminal_cost(x_opt_trajectory[:,T-1,0], x_trajectory[:,T-2])
+    
+    Q_trajectory[:,:,-1] = cost.hessian_terminal_cost()
+    
+    q_trajectory[:,-1] = cost.grad_terminal_cost(x_opt_trajectory[:,T-1,0], x_trajectory[:,T-1])
     
     for k in range(max_iter):          
-        for t in range(T-1):   
+        for t in range(T):   
             print("Iteration: ", k, " Time step: ", t)
             
             dtheta1 = x_trajectory[0,t]
@@ -214,6 +220,8 @@ def compute_LQR_trajectory(x_trajectory, u_trajectory, step_size = 0.1, max_iter
             
             A_trajectory[:,:,t] = dfx.T
             B_trajectory[:,:,t] = dfu.T
+
+        for t in range(T-1):
             Q_trajectory[:,:,t] = cost.hessian1_J()
             R_trajectory[:,:,t] = cost.hessian2_J()
         

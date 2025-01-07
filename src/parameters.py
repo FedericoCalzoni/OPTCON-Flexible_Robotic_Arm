@@ -147,3 +147,9 @@ plot_states_at_last_iteration = True
 
 state_perturbation_percentage =0.1
 input_perturbation_percentage =0.1
+
+
+# MPC parameters
+T_pred = 5
+umax=50
+umin=-umax

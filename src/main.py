@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import data_manager as dm
 
 
+from mpc import compute_mpc
+import pickle
 
 def main():
     print("\n\n\
@@ -52,6 +54,50 @@ def main():
     anim(x_gen.T)
 
     
+#
+    # # Compute optimal trajectory using gradient method
+    # # Initial guess
+    # x_init = np.zeros((x_size, T))
+    # u_init = np.zeros((u_size, T))
+    # x_size = x_0.size
+    # u_size = u_0.size
+    # x_optimal, u_optimal, J, lmbd = gradient_method(x_init, u_init, x_reference, u_reference)
+    
+    # x_trajectory, u_trajectory = LQR.compute_LQR_trajectory(x_reference, u_reference, step_size=0.1, max_iter=10)
+    x_gen, u_gen, l = newton_OC(x_reference, u_reference)
+    # Visualize the simulation
+    # matrix_x_history = np.hstack(x_trajectory)
+
+    #x_debug = np.zeros((x_size,time_intervals-1))
+    #u_debug = np.zeros((u_size,time_intervals-2))
+    #A_debug = np.zeros((x_size, x_size, time_intervals-1))
+    #B_debug = np.zeros((x_size, u_size, time_intervals-1))
+    #x_debug[:, 0] = x_0.flatten()
+    #
+    #for t in range (time_intervals-2):
+    #    u_debug[:, t] = u_0.flatten()
+    #    A_debug[:,:,t] = dyn.jacobian_x_new_wrt_x(x_debug[:,t], u_debug[:,t])
+    #    B_debug[:,:,t] = dyn.jacobian_x_new_wrt_u(x_debug[:,t])
+    #    x_debug[:, t+1] = A_debug[:,:,t] @ x_debug[:,t] + B_debug[:,:,t] @ u_debug[:,t]
+    #
+    #
+    
+    # Save both arrays to a file
+    with open('arrays.pkl', 'wb') as file:
+        pickle.dump((x_gen, u_gen), file)
+
+    print("Arrays saved.")
+
+    # Load the arrays back from the file
+    with open('Optimal_Trajectories.pkl', 'rb') as file:
+        x_gen, u_gen = pickle.load(file)
+
+    # MPC
+    x_trajectory, u_trajectory = compute_mpc(x_gen, u_gen)
+
+
+    #x_trajectory = x_debug
+    anim(x_trajectory.T)
 
 if __name__ == "__main__":
     main()
