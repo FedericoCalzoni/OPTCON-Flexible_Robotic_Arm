@@ -16,7 +16,7 @@ def newton_for_optcon(x_reference, u_reference):
     TT = x_reference.shape[1]
     max_iterations = 1000
     
-    l = np.zeros(max_iterations) # Cost function
+    l = np.zeros((max_iterations)) # Cost function
     x_initial_guess = x_reference[:,0]
     u_initial_guess = u_reference[:,0]
 
