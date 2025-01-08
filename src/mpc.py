@@ -88,7 +88,7 @@ def solver_linear_mpc(A, B, Q, R, x_t, t_start, x_gen, u_gen):
 
     return x_mpc.value, u_mpc.value, problem
 
-def compute_mpc(x_gen, u_gen, K_reg):
+def compute_mpc(x_gen, u_gen):
     x_size = x_gen.shape[0]
     u_size = u_gen.shape[0]
     T = x_gen.shape[1]
@@ -129,7 +129,6 @@ def compute_mpc(x_gen, u_gen, K_reg):
             break
             
         u_real_mpc[:,t] = u_mpc_t[:,0]
-        # u_real_mpc[:,t] = u_mpc_t[:,0] + K_reg[:,:,t] @ (x_t - x_mpc_t[:,0])
         x_real_mpc[:,t+1] = dynamics(x_real_mpc[:,t], u_real_mpc[:,t])
         
         # Print progress
@@ -139,8 +138,8 @@ def compute_mpc(x_gen, u_gen, K_reg):
             print(f"t={t}")
             print(f"Position error={tracking_error_pos:.4f}")
             print(f"Velocity error={tracking_error_vel:.4f}")
-            print(f"Current state: theta1={x_real_mpc[2,t]:.2f}, theta2={x_real_mpc[3,t]:.2f}")
-            print(f"Reference: theta1={x_gen[2,t]:.2f}, theta2={x_gen[3,t]:.2f}")
+            print(f"Current state: dtheta1={x_real_mpc[0,t]:.2f}, dtheta2={x_real_mpc[1,t]:.2f},  theta1={x_real_mpc[2,t]:.2f}, theta2={x_real_mpc[3,t]:.2f}")
+            print(f"Reference: dtheta1={x_gen[0,t]:.2f}, dtheta2={x_gen[1,t]:.2f}, theta1={x_gen[2,t]:.2f}, theta2={x_gen[3,t]:.2f}")
             print(f"Current input: tau1={u_real_mpc[0,t]:.2f}")
             print(f"Reference input: tau1={u_gen[0,t]:.2f}")
             if problem.value is not None:
