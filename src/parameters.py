@@ -73,8 +73,10 @@ TT = int((t_f - t_i)/dt)
 ##      Task 1 and 2 parameters     ##
 ######################################
 
-optimal_trajectory_given = True     
-smoooth_percentage = 0.2
+optimal_trajectory_given = False
+LQR_trajectory_given = False 
+MPC_trajectory_given = False      
+smooth_percentage = 0.2
 transition_width = TT/8
 #Cost Function Parameters
 # Initialize matrices
@@ -97,21 +99,19 @@ QT = Qt[:, :, -1]
 c = 0.5
 beta = 0.7
 Arm_plot = False
-Arm_plot_every_k_iter = 5
+Arm_plot_every_k_iter = 2
 
 Newton_Optcon_Plots = False
 Newton_Plot_every_k_iterations = 3
 plot_states_at_last_iteration = True
 
-
 ################################
 ##      Task 3 Parameters     ##
 ################################  
 
-state_perturbation_percentage =0.1
-input_perturbation_percentage =0.1
+state_perturbation_percentage = 0.01
+affine_perturbation = 0.05
 #Cost Function Parameters
-smoooth_percentage = 0.2
 transition_width = TT/8
 #Cost Function Parameters
 # Initialize matrices
@@ -119,19 +119,15 @@ Qt_temp_reg = np.zeros((4, 4, 3))
 Rt_temp_reg = np.zeros((1, 1, 3))
 
 # Phase values
-Qt_temp_reg[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e8
-Rt_temp_reg[:, :, 0] = np.diag([1]) * 1e2
-Qt_temp_reg[:, :, 1] = np.diag([1, 1, 1, 1]) * 0
-Rt_temp_reg[:, :, 1] = np.diag([3]) * 1e3
-Qt_temp_reg[:, :, 2] = np.diag([1, 1, 1, 1]) * 1e8
-Rt_temp_reg[:, :, 2] = np.diag([1]) * 1e2
+Qt_temp_reg[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e7
+Rt_temp_reg[:, :, 0] = np.diag([5]) * 1e1
+Qt_temp_reg[:, :, 1] = np.diag([1, 1, 1, 1]) * 1e2
+Rt_temp_reg[:, :, 1] = np.diag([1]) * 1e0
+Qt_temp_reg[:, :, 2] = np.diag([0.8, 0.8, 1, 1]) * 1e7
+Rt_temp_reg[:, :, 2] = np.diag([1]) * 1e0
 
 Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, transition_width)
 QT_reg = Qt_reg[:, :, -1]
-
-# Armijo parameters
-c = 0.5
-beta = 0.7
 
 
 ################################

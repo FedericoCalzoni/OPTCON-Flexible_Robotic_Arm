@@ -25,20 +25,19 @@ def newton_method(initial_guess, step_size=1e-2, iterations=1000):
         z_1 = z[1].item()
         z_2 = z[2].item()
         J_z = jacobian_function(z_0, z_1)
-        #print(f"J_z: {J_z}")
         r_z = compute_gravity(z_0, z_1)- [[z_2], [0]]
         #TODO: use armijo rule to find the step size
         try:
-            # TODO: verify if we need the transpose and if we
-            # have the gravity upside down (change the sign)
             delta_z = - step_size * np.linalg.pinv(J_z) @ r_z
             z = z + delta_z
-            #print(f"Iteration: {i}, z: {z}")
         except np.linalg.LinAlgError:
             print("Singular matrix at iteration: ", i)
             break
         if np.linalg.norm(delta_z) < tolerance:
             print(f"Converged after {i} iterations")
             break
-        
-    return z
+    
+    x_eq = np.array([0, 0, z[0].item(), z[1].item()])
+    u_eq = np.array([z[2].item()])
+
+    return x_eq, u_eq
