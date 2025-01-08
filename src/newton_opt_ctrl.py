@@ -271,10 +271,6 @@ def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
     plt.tight_layout()
     plt.show()
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-
 def plot_optimal_intermediate_trajectory(x_reference, u_reference, x_gen, u_gen, k_max):
     
     total_time_steps = x_reference.shape[1]
