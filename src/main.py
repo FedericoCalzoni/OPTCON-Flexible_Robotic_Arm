@@ -9,6 +9,7 @@ from newton_opt_ctrl import plot_optimal_trajectory
 import matplotlib.pyplot as plt
 import data_manager as dm
 from mpc import compute_mpc
+from Task_3 import LQR_system_regulator as LQR
 import pickle
 
 def main():
@@ -18,63 +19,62 @@ def main():
     #       \t ------------------------------------------\n\
     #       \n\n")
 
-    # if pm.optimal_trajectory_given:
-    #     x_gen, u_gen = dm.load_optimal_trajectory('latest')
-    # else:
-    #     z_0_eq1 = np.array([[-np.pi/2+0.01], [np.pi/2-0.01], [-44]])
-    #     z_0_eq2 = np.array([[np.pi/2-0.01], [-np.pi/2+0.01], [+44]])
-    #     # z_0_eq1 = np.array([[np.pi+np.pi/2.1], [-np.pi/2.1], [-40]])
-    #     # z_0_eq2 = np.array([[np.pi-np.pi/2.1], [+np.pi/2.1], [+40]])
-    #     equilibria_1 = newton_method(z_0_eq1)
-    #     equilibria_2 = newton_method(z_0_eq2)
-    #     eq1_theta1 = equilibria_1[0].item()
-    #     eq1_theta2 = equilibria_1[1].item()
-    #     eq1_tau1 = equilibria_1[2].item()
-    #     eq2_theta1 = equilibria_2[0].item()
-    #     eq2_theta2 = equilibria_2[1].item()
-    #     eq2_tau1 = equilibria_2[2].item()
-    #     print("eq_1: ", equilibria_1.T, "\n")
-    #     print("eq_2: ", equilibria_2.T, "\n")
-
-    #     # Initial state and input
-    #     x_0 = np.array([[0], [0], [eq1_theta1], [eq1_theta2]]) # Initial state (dtheta1, dtheta2, theta1, theta2)
-    #     u_0 = np.array([eq1_tau1]) # Input (tau1)
-    #     #print("Initial state: ", x_0)
-    #     #print("Initial input: ", u_0)
-    #     x_size = x_0.size
-    #     u_size = u_0.size
-
-    #     # Final desired state
-    #     x_f = np.array([[0], [0], [eq2_theta1], [eq2_theta2]])
-    #     #print("Final desired state: ", x_f)
-
-    #     x_reference, u_reference = reference_trajectory.generate_trajectory(pm.t_f, x_0.flatten(), x_f.flatten(), eq1_tau1, eq2_tau1)    
-    #     reference_trajectory.plot_trajectory(x_reference, u_reference)
+    #####################################
+    ##           Task 1 - 2            ##
+    #####################################
+    if pm.optimal_trajectory_given:
+        x_gen, u_gen = dm.load_optimal_trajectory(version = '2')
+    else:
+        z_0_eq1 = np.array([[-np.pi/2+0.01], [np.pi/2-0.01], [-44]])
+        z_0_eq2 = np.array([[np.pi/2-0.01], [-np.pi/2+0.01], [+44]])
+        # z_0_eq1 = np.array([[np.pi+np.pi/2.1], [-np.pi/2.1], [-40]])
+        # z_0_eq2 = np.array([[np.pi-np.pi/2.1], [+np.pi/2.1], [+40]])
+        x_eq0, u_eq0 = newton_method(z_0_eq1)
+        x_eqf, u_eqf = newton_method(z_0_eq2)
         
-        
+        # Initial state and input
+        print("Initial state:\t", x_eq0.T ,"\tInitial input:\t", u_eq0.T)
+        print("Final state:\t", x_eqf.T, "\tFinal Input:\t", u_eqf.T)
+        x_reference, u_reference = reference_trajectory.generate_trajectory(x_eq0, x_eqf, u_eq0, u_eqf)    
 
-    # x_gen, u_gen = newton_OC(x_reference, u_reference)
-    # anim(x_gen.T)
-    # # dm.save_optimal_trajectory(x_gen, u_gen)
-
-    # # with open('normal.pkl', 'wb') as file:
-    # #     pickle.dump((x_gen, u_gen), file)
-
-    # # print("Arrays saved.")
+        x_gen, u_gen, l = newton_OC(x_reference, u_reference)
+        dm.save_optimal_trajectory(x_gen, u_gen)
     
-    # Load the array back from the file
-    with open('normal.pkl', 'rb') as file:
-        x_gen, u_gen = pickle.load(file)
-        anim(x_gen.T)
-        
-    # plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen)
-        
-    # MPC
-    x_trajectory, u_trajectory = compute_mpc(x_gen, u_gen, K_reg=None)
-    dm.save_mpc_trajectory(x_trajectory, u_trajectory)
+    anim(x_gen.T)
+
+    #####################################
+    ##              Task 3             ##
+    #####################################
+
+    if pm.LQR_trajectory_given:
+        x_LQR, u_LQR = dm.load_lqr_trajectory(version = 'latest')
+    else:
+        x_LQR, u_LQR = LQR(x_gen, u_gen)
+        dm.save_lqr_trajectory(x_LQR, u_LQR)
     
-    #x_trajectory = x_debug
-    anim(x_trajectory.T)
+    plt.figure()
+    for i in range(4):
+        plt.plot(x_LQR[i, :], color = 'red', label = f'x_LQR[{0}]' )
+        plt.plot(x_gen[i, :], color = 'blue', label = f'x_gen[{0}]' )
+    plt.title('Optimal Trajectory VS LQR Trajectory')
+    plt.grid()
+    plt.legend()
+    plt.show(block = True)
+
+    anim(x_LQR.T)
+
+    #####################################
+    ##              Task 4             ##
+    #####################################
+
+    if pm.MPC_trajectory_given:
+        dm.load_mpc_trajectory(version = 'latest')
+    else:
+        x_mpc, u_mpc = compute_mpc(x_gen, u_gen)
+        dm.save_mpc_trajectory(x_mpc, u_mpc)
+
+    
+    anim(x_mpc.T)
 
 if __name__ == "__main__":
     main()

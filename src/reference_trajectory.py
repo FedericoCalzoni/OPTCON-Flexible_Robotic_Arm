@@ -5,9 +5,9 @@ import parameters as pm
 from parameters import t_f, dt
 from parameters import smooth_percentage as smooth_period
 
-def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2):
-    total_time_steps = int(tf / pm.dt)
-    time = np.linspace(0, tf, total_time_steps)
+def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2):
+    total_time_steps = int(pm.t_f / pm.dt)
+    time = np.linspace(0, pm.t_f, total_time_steps)
     x_size = x_eq2.shape[0]
     
     # Initialize references
@@ -15,8 +15,8 @@ def generate_trajectory(tf, x_eq1, x_eq2, u_eq1, u_eq2):
     u_reference = np.zeros((1, total_time_steps))
 
     # Create the cubic spline for the middle region
-    t1 = tf / (2*pm.dt) - tf*smooth_period / (2*pm.dt)
-    t2 = tf / (2*pm.dt) + tf*smooth_period / (2*pm.dt)
+    t1 = pm.t_f / (2*pm.dt) - pm.t_f*smooth_period / (2*pm.dt)
+    t2 = pm.t_f / (2*pm.dt) + pm.t_f*smooth_period / (2*pm.dt)
   
     for i in range(x_size):
         # Create a cubic spline to interpolate between x_eq1 and x_eq2
