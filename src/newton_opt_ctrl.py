@@ -5,11 +5,11 @@ import parameters as pm
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from numpy.linalg import inv
-import armijotest as armijo
+import armijo as armijo
 
 def newton_for_optcon(x_reference, u_reference):
     print('\n\n\
-         \t\t--------------------------------------------\n \
+         \t--------------------------------------------\n \
            \tLaunching: Newton Method for Optimal Control\n \
            \t--------------------------------------------')
     x_size = x_reference.shape[0]

@@ -1,7 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from dynamics import dynamics, jacobian_x_new_wrt_x, jacobian_x_new_wrt_u
-import cost
+import costTask4 as cost
 from parameters import T_pred, u_max, u_min, x_dtheta_max, x_dtheta_min, x_theta1_max, x_theta1_min, x_theta2_max, x_theta2_min, state_perturbation_percentage
 
 def solver_linear_mpc(A, B, Q, R, x_t, t_start, x_gen, u_gen): 

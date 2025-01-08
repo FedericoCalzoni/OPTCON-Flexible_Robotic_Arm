@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import transpose as Tr
-from parameters import Qt, Rt, QT
-
+from parameters import Qt_MPC as Qt,  Rt_MPC as Rt,  QT_MPC as QT
 
 def J_Function(x_trajectory, u_trajectory, x_reference, u_reference, type):
     """

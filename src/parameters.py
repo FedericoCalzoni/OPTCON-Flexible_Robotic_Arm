@@ -69,13 +69,14 @@ t_f = 10
 dt = 1e-3
 TT = int((t_f - t_i)/dt)
 
+optimal_trajectory_given = False
+LQR_trajectory_given = False 
+MPC_trajectory_given = False  
+
 ######################################
 ##      Task 1 and 2 parameters     ##
 ######################################
 
-optimal_trajectory_given = False
-LQR_trajectory_given = False 
-MPC_trajectory_given = False      
 smooth_percentage = 0.2
 transition_width = TT/8
 #Cost Function Parameters

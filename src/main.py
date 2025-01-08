@@ -9,15 +9,15 @@ from newton_opt_ctrl import plot_optimal_trajectory
 import matplotlib.pyplot as plt
 import data_manager as dm
 from mpc import compute_mpc
-from Task_3 import LQR_system_regulator as LQR
+from LQR import LQR_system_regulator as LQR
 import pickle
 
 def main():
-    # print("\n\n\
-    #       \t ------------------------------------------\n\
-    #       \t\t\t ♫ START ♪\n\
-    #       \t ------------------------------------------\n\
-    #       \n\n")
+    print("\n\n\
+          \t ------------------------------------------\n\
+          \t\t\t ♫ START ♪\n\
+          \t ------------------------------------------\n\
+          \n\n")
 
     #####################################
     ##           Task 1 - 2            ##
