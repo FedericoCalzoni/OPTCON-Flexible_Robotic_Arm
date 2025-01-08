@@ -79,7 +79,7 @@ def stage_cost(x_stage, x_reference, u_stage, u_reference, type, t):
 
             # Define the block matrix mad of Q, S and R
             augmented_state_matrix = np.block([
-                [Qt_tilde, St_tilde.T]
+                [Qt_tilde, St_tilde.T],
                 [St_tilde, Rt]
             ])
 
