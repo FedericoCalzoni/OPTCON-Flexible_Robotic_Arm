@@ -3,6 +3,7 @@ import dynamics as dyn
 import cost
 import parameters as pm
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from numpy.linalg import inv
 import armijotest as armijo
 
@@ -124,7 +125,8 @@ def newton_for_optcon(x_reference, u_reference):
     print(f'Ho finito alla {k}^ iterazione')
     newton_finished = True
     first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
-    return x_optimal[:,:,k], u_optimal[:,:,k], l[:k]
+    plot_optimal_intermediate_trajectory(x_reference, u_reference, x_optimal, u_optimal, k)
+    return x_optimal[:,:,k], u_optimal[:,:,k]
 
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
@@ -228,3 +230,118 @@ def second_plot_set(k, sigma_star, delta_u, K_Star):
             plt.grid()
             plt.legend()
             plt.show()
+            
+
+def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
+    """
+    Plots the comparison of trajectories for state (x) and input (u).
+    Divides the plots into 5 subplots: 4 for x and 1 for u.
+    """
+    # Assume x and u share the same time steps and shapes for this example
+    total_time_steps = x_reference.shape[1]
+    time = np.linspace(0, total_time_steps - 1, total_time_steps)  # Using step indices as time
+    
+    fig = plt.figure(figsize=(10, 10))
+    
+    names = {
+        0: r'$\dot \theta_1$', 1: r'$\dot \theta_2$', 
+        2: r'$\theta_1$', 3: r'$\theta_2$'
+    }
+    colors_ref = {0: 'm', 1: 'orange', 2: 'b', 3: 'g'}
+    colors_opt = {0: 'purple', 1: 'chocolate', 2: 'navy', 3: 'lime'}
+    
+    # Plot state (x) comparison in 2x2 grid
+    for i in range(4):
+        ax = fig.add_subplot(3, 2, i + 1)  # 3 rows, 2 columns, position i+1
+        ax.plot(time, x_reference[i, :], color=colors_ref[i], linestyle='--', label=f'{names[i]} (ref)', linewidth=2)
+        ax.plot(time, x_gen[i, :], color=colors_opt[i], label=f'{names[i]} (opt)', linewidth=2)
+        ax.set_title(names[i])
+        ax.set_ylabel('[rad/s]' if i < 2 else '[rad]')
+        ax.legend()
+        ax.grid(True)
+    
+    # Plot input (u) comparison in a standalone plot
+    ax = fig.add_subplot(3, 1, 3)  # Full-width plot at the bottom
+    ax.plot(time, u_reference[0, :], color='r',  linestyle='--', label=r'$\tau_1$ (ref)', linewidth=2)
+    ax.plot(time[:total_time_steps-1], u_gen[0,:total_time_steps-1], color='darkred', label=r'$\tau_1$ (opt)', linewidth=2)
+    ax.set_title(r'$\tau_1$ Comparison')
+    ax.set_xlabel('Time [steps]')
+    ax.set_ylabel('[Nm]')
+    ax.legend()
+    ax.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_optimal_intermediate_trajectory(x_reference, u_reference, x_gen, u_gen, k_max):
+    """
+    Plots the comparison of trajectories for state (x) and input (u).
+    Creates separate plots for each state (x) and input (u), with color gradients
+    representing the evolution of the trajectories over the k iterations.
+    Each plot uses a different colormap (Spring, Copper, Winter, Summer, Autumn).
+    """
+    # Assume x and u share the same time steps and shapes for this example
+    total_time_steps = x_reference.shape[1]
+    time = np.linspace(0, total_time_steps - 1, total_time_steps)  # Using step indices as time
+    
+    names = {
+        0: r'$\dot \theta_1$', 1: r'$\dot \theta_2$', 
+        2: r'$\theta_1$', 3: r'$\theta_2$'
+    }
+    colors_ref = {0: 'm', 1: 'orange', 2: 'b', 3: 'g'}
+    
+    
+    # Colormap assignment for each plot
+    colormaps = [cm.spring, cm.copper_r, cm.winter, cm.summer, cm.YlOrBr_r]
+    
+    # Plot each state (x) separately
+    for i in range(4):
+        # Create a new figure for each state plot
+        fig = plt.figure(figsize=(9, 4))
+        ax = fig.add_subplot(111)
+        
+        # Plot reference trajectory for x
+        ax.plot(time, x_reference[i, :], color=colors_ref[i], linestyle='--', label=f'{names[i]} (ref)', linewidth=2)
+        
+        # Select colormap for this plot
+        cmap = colormaps[i]
+        
+        # Plot x_gen with color gradient over k iterations
+        for k in range(k_max):
+            if k % 3 == 0:  # To avoid over-crowding the plot, plot every 3rd iteration
+                ax.plot(time, x_gen[i, :, k + 1], color=cmap(k / (k_max - 1)), label=f'{names[i]} (opt, k={k + 2})', linewidth=2)
+        
+        ax.set_title(names[i])
+        ax.set_ylabel('[rad/s]' if i < 2 else '[rad]')
+        ax.legend()
+        ax.grid(True)
+        
+        plt.tight_layout()
+        plt.show()
+    
+    # Plot input (u) comparison in a standalone plot
+    fig = plt.figure(figsize=(9, 4))
+    ax = fig.add_subplot(111)
+    
+    ax.plot(time, u_reference[0, :], color='r', linestyle='--', label=r'$\tau_1$ (ref)', linewidth=2)
+    
+    # Select colormap for input plot
+    cmap_input = cm.autumn
+    
+    # Plot u_gen with color gradient over k iterations
+    for k in range(k_max):
+        if k % 3 == 0:  # To avoid over-crowding the plot, plot every 3rd iteration
+            ax.plot(time[:total_time_steps - 1], u_gen[0, :total_time_steps - 1, k + 1], color=cmap_input(k / (k_max - 1)), label=r'$\tau_1$ (opt)', linewidth=2)
+    
+    ax.set_title(r'$\tau_1$ Comparison')
+    ax.set_xlabel('Time [steps]')
+    ax.set_ylabel('[Nm]')
+    ax.legend()
+    ax.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+
+
+
+

@@ -24,12 +24,36 @@ def save_optimal_trajectory(x_optimal, u_optimal):
     dir = "DataArchive"
     save_file(x_optimal, u_optimal, base_name=file, directory=dir)
 
+
+def save_mpc_trajectory(x_mpc, u_mpc):
+    """
+    Save the optimal trajectory data on a specified version of the file "Optimal_Trajectories".
+
+    Args:
+        x_optimal (NumPy.array): The optimal trajectory of the states.
+        u_optimal (NumPy.array): The optimal trajectory of the inputs.
+    Returns:
+        None
+
+    Example:
+        >>> save_optimal_trajectory(x_opt, u_opt)
+    """
+    file = "MPC_Trajectory"
+    dir = "DataArchive"
+    save_file(x_mpc, u_mpc, base_name=file, directory=dir)
+
+
+import os
+import re
+import numpy as np
+from datetime import datetime
+
 def save_file(*args, base_name, directory):
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     archive_dir = os.path.join(base_dir, '..', directory)
     os.makedirs(archive_dir, exist_ok=True)
     new_file_name = get_next_filename(base_name, archive_dir)
-    # Crea un dizionario con nomi dinamici per ogni argomento
+    # Create a dictionary with dynamic names for each argument
     saved_data = {}
 
     for i, arg in enumerate(args):
@@ -52,29 +76,28 @@ def get_next_filename(base_name, directory="."):
     Returns:
         str: The properly formatted file name to be written
     """
-    
     extension = ".npz"
     pattern = rf"{re.escape(base_name)}_v(\d+)_.*{re.escape(extension)}"
     
-    # Trova tutti i file nella directory che corrispondono al pattern
+    # Find all files in the directory that match the pattern
     versions = []
     for file_name in os.listdir(directory):
         match = re.match(pattern, file_name)
         if match:
-            versions.append(int(match.group(1)))  # Estrai il numero di versione
+            versions.append(int(match.group(1)))  # Extract the version number
 
-    # Calcola la nuova versione
-    new_version = max(versions, default=0) + 1  # Se nessun file trovato, inizia da 1
+    # Calculate the new version
+    new_version = max(versions, default=0) + 1  # Start from 1 if no file found
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    new_file_name = f"{directory}\\{base_name}_v{new_version}_{timestamp}{extension}"
+    new_file_name = os.path.join(directory, f"{base_name}_v{new_version}_{timestamp}{extension}")
     return new_file_name
 
 #################################
 ##        Load Functions       ##
 #################################
 
-def load_optimal_trajectory(version = 'latest'):
+def load_optimal_trajectory(version='latest'):
     """
     Loads the optimal trajectory data from a specified version of the file.
 
@@ -111,11 +134,11 @@ def load_optimal_trajectory(version = 'latest'):
                 u_optimal = trajectories[arg_name]
     return x_optimal, u_optimal
 
-def load_file(base_name, directory, version = 'latest'):
+def load_file(base_name, directory, version='latest'):
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     archive_dir = os.path.join(base_dir, '..', directory)
     os.makedirs(archive_dir, exist_ok=True)
-    file_name_to_be_loaded  = get_filename_to_load(base_name, archive_dir, version)
+    file_name_to_be_loaded = get_filename_to_load(base_name, archive_dir, version)
     vars = np.load(file_name_to_be_loaded)
 
     return vars
@@ -125,12 +148,12 @@ def get_filename_to_load(base_name, directory, version):
     file_name_to_load = None
     pattern = rf"{re.escape(base_name)}_v(\d+)_.*{re.escape(extension)}"
     
-    # Trova tutti i file nella directory che corrispondono al pattern
+    # Find all files in the directory that match the pattern
     versions = []
     for file_name in os.listdir(directory):
         match = re.match(pattern, file_name)
         if match:
-            versions.append(int(match.group(1)))  # Estrai il numero di versione
+            versions.append(int(match.group(1)))  # Extract the version number
 
     try:
         if version == 'latest':

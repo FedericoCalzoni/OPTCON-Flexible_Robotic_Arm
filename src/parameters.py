@@ -73,8 +73,8 @@ TT = int((t_f - t_i)/dt)
 ##      Task 1 and 2 parameters     ##
 ######################################
 
-optimal_trajectory_given = True     
-smoooth_percentage = 0.2
+optimal_trajectory_given = False    
+smooth_percentage = 0
 transition_width = TT/8
 #Cost Function Parameters
 # Initialize matrices
@@ -96,7 +96,7 @@ QT = Qt[:, :, -1]
 # Armijo parameters
 c = 0.5
 beta = 0.7
-Arm_plot = False
+Arm_plot = True
 Arm_plot_every_k_iter = 5
 
 Newton_Optcon_Plots = False
@@ -111,7 +111,7 @@ plot_states_at_last_iteration = True
 state_perturbation_percentage =0.1
 input_perturbation_percentage =0.1
 #Cost Function Parameters
-smoooth_percentage = 0.2
+smooth_percentage = 0
 transition_width = TT/8
 #Cost Function Parameters
 # Initialize matrices
@@ -138,7 +138,32 @@ beta = 0.7
 ##      Task 4 Parameters     ##
 ################################  
 
+state_perturbation_percentage = -0.2
+
 # MPC parameters
-T_pred = 5
-umax=50
-umin=-umax
+T_pred = 15
+u_max = 60
+u_min = -u_max
+x_dtheta_max = 10
+x_dtheta_min = -x_dtheta_max
+
+# normal
+x_theta1_max = 2*np.pi
+x_theta1_min = -x_theta1_max
+x_theta2_max = 2*np.pi
+x_theta2_min = -x_theta2_max
+
+Qt_temp = np.zeros((4, 4, 3))
+Rt_temp = np.zeros((1, 1, 3))
+
+# Phase values
+Qt_temp[:, :, 0] = np.diag([1, 1, 100, 100])*1e2
+Rt_temp[:, :, 0] = np.diag([1]) * 0
+Qt_temp[:, :, 1] = np.diag([1, 10, 1, 1])*1e2
+Rt_temp[:, :, 1] = np.diag([1]) * 0
+Qt_temp[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
+Rt_temp[:, :, 2] = np.diag([1]) * 0
+
+# Assign final results
+Qt, Rt = cost_matrices_computation(Qt_temp, Rt_temp, transition_width)
+QT = Qt[:, :, -1]
