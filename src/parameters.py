@@ -15,40 +15,97 @@ def smooth_transition(t, start, end):
     width = end - start
     return 1 / (1 + np.exp(-10 * (t - (start + width / 2)) / width))
 
-def cost_matrices_computation(Qt_temp, Rt_temp, transition_width):
-    # Output matrices
-    Qt_final = np.zeros((4, 4, TT))
-    Rt_final = np.zeros((1, 1, TT))
+# def cost_matrices_computation(Qt_temp, Rt_temp, transition_width):
+#     # Output matrices
+#     Qt_final = np.zeros((4, 4, TT))
+#     Rt_final = np.zeros((1, 1, TT))
 
-    # Time intervals
-    phase1_end = int(TT / 3 - transition_width / 2)
-    phase2_end = int(TT / 3 + transition_width / 2)
-    phase3_end = int(2 * TT / 3 - transition_width / 2)
-    phase4_end = int(2 * TT / 3 + transition_width / 2)
+#     # Time intervals
+#     phase1_end = int(TT / 3 - transition_width / 2)
+#     phase2_end = int(TT / 3 + transition_width / 2)
+#     phase3_end = int(2 * TT / 3 - transition_width / 2)
+#     phase4_end = int(2 * TT / 3 + transition_width / 2)
 
-    for t in range(TT):
-        if t < phase1_end:
-            # Phase 1: Constant values
-            Qt_final[:, :, t] = Qt_temp[:, :, 0]
-            Rt_final[:, :, t] = Rt_temp[:, :, 0]
-        elif phase1_end <= t < phase2_end:
-            # Phase 2: Transition from [0] to [1]
-            weight = smooth_transition(t, phase1_end, phase2_end)
-            Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 0] + weight * Qt_temp[:, :, 1]
-            Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 0] + weight * Rt_temp[:, :, 1]
-        elif phase2_end <= t < phase3_end:
-            # Phase 3: Constant values
-            Qt_final[:, :, t] = Qt_temp[:, :, 1]
-            Rt_final[:, :, t] = Rt_temp[:, :, 1]
-        elif phase3_end <= t < phase4_end:
-            # Phase 4: Transition from Qt_temp[1] to Qt_temp[2]
-            weight = smooth_transition(t, phase3_end, phase4_end)
-            Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 1] + weight * Qt_temp[:, :, 2]
-            Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 1] + weight * Rt_temp[:, :, 2]
-        else:
-            # Phase 5: Constant values
-            Qt_final[:, :, t] = Qt_temp[:, :, 2]
-            Rt_final[:, :, t] = Rt_temp[:, :, 2]
+#     for t in range(TT):
+#         if t < phase1_end:
+#             # Phase 1: Constant values
+#             Qt_final[:, :, t] = Qt_temp[:, :, 0]
+#             Rt_final[:, :, t] = Rt_temp[:, :, 0]
+#         elif phase1_end <= t < phase2_end:
+#             # Phase 2: Transition from [0] to [1]
+#             weight = smooth_transition(t, phase1_end, phase2_end)
+#             Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 0] + weight * Qt_temp[:, :, 1]
+#             Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 0] + weight * Rt_temp[:, :, 1]
+#         elif phase2_end <= t < phase3_end:
+#             # Phase 3: Constant values
+#             Qt_final[:, :, t] = Qt_temp[:, :, 1]
+#             Rt_final[:, :, t] = Rt_temp[:, :, 1]
+#         elif phase3_end <= t < phase4_end:
+#             # Phase 4: Transition from Qt_temp[1] to Qt_temp[2]
+#             weight = smooth_transition(t, phase3_end, phase4_end)
+#             Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 1] + weight * Qt_temp[:, :, 2]
+#             Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 1] + weight * Rt_temp[:, :, 2]
+#         else:
+#             # Phase 5: Constant values
+#             Qt_final[:, :, t] = Qt_temp[:, :, 2]
+#             Rt_final[:, :, t] = Rt_temp[:, :, 2]
+#     return Qt_final, Rt_final
+
+def compute_intervals(total_time, num_divisions, transition_width, rest_start, rest_end):
+    """
+    Compute the start and end indices for each phase and transition.
+    """
+    transition_time = total_time - rest_start - rest_end
+    interval_length = transition_time / num_divisions
+    intervals = []
+    for i in range(num_divisions):
+        start = int(i * interval_length)+rest_start
+        end = int((i + 1) * interval_length)+rest_start
+        transition_end = max(start, end - int(transition_width / 2))
+        transition_middle = int((start + end) / 2)
+        transition_start = min(end, start + int(transition_width / 2))
+        intervals.append((start, transition_start, transition_middle, transition_end, end))
+    print(intervals)
+    return intervals
+
+def cost_matrices_computation(Qt_temp, Rt_temp, total_time, num_divisions, transition_width):
+    """
+    Compute the cost matrices for given divisions and transitions.
+    """
+    num_states = Qt_temp.shape[0]
+    num_controls = Rt_temp.shape[0]
+    rest_start = 2500
+    rest_end = 2500
+    Qt_final = np.zeros((num_states, num_states, total_time))
+    Rt_final = np.zeros((num_controls, num_controls, total_time))
+
+    for t in range(total_time):
+        Qt_final[:,:,t] = Qt_temp[:, :, 0]
+        Rt_final[:,:,t] = Rt_temp[:, :, 0]
+
+    intervals = compute_intervals(total_time, num_divisions, transition_width, rest_start, rest_end)
+
+    for i, (start, transition_start, transition_middle, transition_end, end) in enumerate(intervals):
+        for t in range(start, end):
+            if t < start:  # Skip earlier phases
+                continue
+            if start <= t < transition_start:  # Constant phase
+                Qt_final[:, :, t] = Qt_temp[:, :, 0]
+                Rt_final[:, :, t] = Rt_temp[:, :, 0]
+            elif transition_start <= t < transition_middle:  # Transition phase
+                weight = smooth_transition(t, transition_start, transition_middle)
+                Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 0] + weight * Qt_temp[:, :, 1]
+                Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 0] + weight * Rt_temp[:, :, 1]
+            elif transition_middle <= t < transition_end:  # Transition phase
+                weight = smooth_transition(t, transition_middle, transition_end)
+                Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 1] + weight * Qt_temp[:, :, 0]
+                Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 1] + weight * Rt_temp[:, :, 0]
+            elif transition_end <= t < end:  # Constant phase again
+                Qt_final[:, :, t] = Qt_temp[:, :, 0]
+                Rt_final[:, :, t] = Rt_temp[:, :, 0]
+            elif t >= end:  # Move to the next phase
+                break
+
     return Qt_final, Rt_final
 
 # Dynamics parameters
@@ -65,36 +122,47 @@ F1 = 0.1
 F2 = 0.1
 
 t_i = 0
-t_f = 10
+t_f = 55
 dt = 1e-3
 TT = int((t_f - t_i)/dt)
 
 optimal_trajectory_given = False
 LQR_trajectory_given = False 
-MPC_trajectory_given = False  
+MPC_trajectory_given = True  
 
 ######################################
 ##      Task 1 and 2 parameters     ##
 ######################################
 
 smooth_percentage = 0.2
-transition_width = TT/8
+transition_width = 1000
+divisions = 5
+
 #Cost Function Parameters
 # Initialize matrices
-Qt_temp = np.zeros((4, 4, 3))
-Rt_temp = np.zeros((1, 1, 3))
+Qt_temp = np.zeros((4, 4, 2))
+Rt_temp = np.zeros((1, 1, 2))
 
 # Phase values
-Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e8
-Rt_temp[:, :, 0] = np.diag([1]) * 1e2
-Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1]) * 0
-Rt_temp[:, :, 1] = np.diag([3]) * 1e3
-Qt_temp[:, :, 2] = np.diag([1, 1, 1, 1]) * 1e8
-Rt_temp[:, :, 2] = np.diag([1]) * 1e2
+# Assign values
+
+Qt_temp[:, :, 0] = np.diag([60000, 130000, 10000000, 3000000])   # Constant phase
+Rt_temp[:, :, 0] = np.diag([40])                                 # Constant phase
+Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1])                  # Transition phase
+Rt_temp[:, :, 1] = np.diag([40]) 
 
 # Assign final results
-Qt, Rt = cost_matrices_computation(Qt_temp, Rt_temp, transition_width)
+Qt, Rt = cost_matrices_computation(Qt_temp, Rt_temp, TT, divisions, transition_width)
 QT = Qt[:, :, -1]
+
+print(Qt.shape, Rt.shape)
+
+# from matplotlib import pyplot as plt
+# for i in range(4):
+#     plt.plot(Qt[i, i, :])
+# plt.plot(Rt[0, 0, :])
+# plt.show()
+
 
 # Armijo parameters
 c = 0.5
@@ -102,8 +170,8 @@ beta = 0.7
 Arm_plot = False
 Arm_plot_every_k_iter = 2
 
-Newton_Optcon_Plots = False
-Newton_Plot_every_k_iterations = 3
+Newton_Optcon_Plots = True
+Newton_Plot_every_k_iterations = 2
 plot_states_at_last_iteration = True
 
 ################################
@@ -116,20 +184,17 @@ affine_perturbation = 0.05
 transition_width = TT/8
 #Cost Function Parameters
 # Initialize matrices
-Qt_temp_reg = np.zeros((4, 4, 3))
-Rt_temp_reg = np.zeros((1, 1, 3))
+Qt_temp_reg = np.zeros((4, 4, 2))
+Rt_temp_reg = np.zeros((1, 1, 2))
 
 # Phase values
 Qt_temp_reg[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e7
 Rt_temp_reg[:, :, 0] = np.diag([5]) * 1e1
 Qt_temp_reg[:, :, 1] = np.diag([1, 1, 1, 1]) * 1e2
 Rt_temp_reg[:, :, 1] = np.diag([1]) * 1e0
-Qt_temp_reg[:, :, 2] = np.diag([0.8, 0.8, 1, 1]) * 1e7
-Rt_temp_reg[:, :, 2] = np.diag([1]) * 1e0
 
-Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, transition_width)
+Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, TT, divisions, transition_width)
 QT_reg = Qt_reg[:, :, -1]
-
 
 ################################
 ##      Task 4 Parameters     ##
@@ -138,10 +203,10 @@ QT_reg = Qt_reg[:, :, -1]
 state_perturbation_percentage = -0.2
 
 # MPC parameters
-T_pred = 15
+T_pred = 5
 u_max = 60
 u_min = -u_max
-x_dtheta_max = 10
+x_dtheta_max = 100
 x_dtheta_min = -x_dtheta_max
 
 # normal
@@ -153,14 +218,23 @@ x_theta2_min = -x_theta2_max
 Qt_temp_MPC = np.zeros((4, 4, 3))
 Rt_temp_MPC = np.zeros((1, 1, 3))
 
-# Phase values
-Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 100, 100])*1e2
+# # Normal
+# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 100, 100])*1e2
+# Rt_temp_MPC[:, :, 0] = np.diag([1]) * 0
+# Qt_temp_MPC[:, :, 1] = np.diag([1, 10, 1, 1])*1e2
+# Rt_temp_MPC[:, :, 1] = np.diag([1]) * 0
+# Qt_temp_MPC[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
+# Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
+
+# Loop
+Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 10000, 10000])
 Rt_temp_MPC[:, :, 0] = np.diag([1]) * 0
-Qt_temp_MPC[:, :, 1] = np.diag([1, 10, 1, 1])*1e2
+Qt_temp_MPC[:, :, 1] = np.diag([0, 0, 1, 1])*1e2
 Rt_temp_MPC[:, :, 1] = np.diag([1]) * 0
-Qt_temp_MPC[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
+Qt_temp_MPC[:, :, 2] = np.diag([1, 1, 10000, 10000])
 Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
 
+
 # Assign final results
-Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, transition_width)
+Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, TT, divisions, transition_width)
 QT_MPC = Qt_MPC[:, :, -1]
