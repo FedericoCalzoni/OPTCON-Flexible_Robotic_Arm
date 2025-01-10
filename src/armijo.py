@@ -4,23 +4,21 @@ from parameters import beta, c, Arm_plot, Arm_plot_every_k_iter
 import cost
 import dynamics as dyn
 
-
-
 def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, step_size_0=0.1):
 
     max_iterations = 100
-    # Estraggo le dimensioni di x ed u (4 e 4) ed il numero di iterazioni in una traiettoria (t_sim) 
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
 
-    # Definisco la risoluzione nei plot; ogni curva è composta da 50 punti
+    # resolution for plotting the cost function
     resolution = 25   
-
-    ## Inizializzo le seguenti variabili:
-    #  -    step_size: gamma che si prende in esame all'iterazione i-esima
-    #  -    gamma: da 1 a resolution, serve per generare i plot
-    #  -    step_sizes: vettore di tutti gli step_size valutati fino all'iterazione i-esima
-    #  -    costs_armijo: vettore dei costi della funzione valutati fino all'iterazione i-esima 
+    
+    ## Initialize the following variables:
+    #  -    step_size: gamma that is considered at the i-th iteration
+    #  -    gamma: from 1 to resolution, used to generate the plots
+    #  -    step_sizes: vector of all the step_sizes evaluated until the i-th iteration
+    #  -    costs_armijo: vector of the costs of the function evaluated until the i-th iteration
+    
     step_size = step_size_0
     gamma = np.linspace(0, 1, resolution)
     step_sizes = []
@@ -50,6 +48,11 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         u_update[:,:] = u_trajectory
         for t in range(horizon-1):
             u_update[:,t] = u_trajectory[:,t] + Kt[:,:,t] @ (x_update[:,t] - x_trajectory[:,t]) + sigma_t[:,t] * step_size
+            # limit the input
+            if u_update[:,t] > 100:
+                u_update[:,t] = 100
+            elif u_update[:,t] < -100:
+                u_update[:,t] = -100
             x_update[:,t+1] = dyn.dynamics(x_update[:,t].reshape(-1, 1), u_update[:,t].reshape(-1, 1))
 
         J_temp = cost.J_Function(x_update, u_update, x_reference, u_reference, "LQR")
