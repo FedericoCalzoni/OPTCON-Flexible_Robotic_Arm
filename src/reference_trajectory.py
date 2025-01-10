@@ -1,13 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
-import parameters as pm
-from parameters import t_f, dt
-from parameters import smooth_percentage as smooth_period
+import parameters as pm 
 
-def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2):
-    total_time_steps = int(pm.t_f / pm.dt)
-    time = np.linspace(0, pm.t_f, total_time_steps)
+def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2, smooth_percentage=pm.smooth_percentage, t_f=pm.t_f, dt=pm.dt):
+    total_time_steps = int(t_f / dt)
     x_size = x_eq2.shape[0]
     
     # Initialize references
@@ -15,12 +12,12 @@ def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2):
     u_reference = np.zeros((1, total_time_steps))
 
     # Create the cubic spline for the middle region
-    t1 = pm.t_f / (2*pm.dt) - pm.t_f*smooth_period / (2*pm.dt)
-    t2 = pm.t_f / (2*pm.dt) + pm.t_f*smooth_period / (2*pm.dt)
+    t1 = t_f / (2*dt) - t_f*smooth_percentage / (2*dt)
+    t2 = t_f / (2*dt) + t_f*smooth_percentage / (2*dt)
   
     for i in range(x_size):
         # Create a cubic spline to interpolate between x_eq1 and x_eq2
-        if smooth_period != 0:
+        if smooth_percentage != 0:
             spline = CubicSpline([t1, t2], np.vstack([x_eq1, x_eq2]), bc_type='clamped')
         for t in range(total_time_steps):
             if t <= t1:  # Before tf/4
@@ -30,21 +27,24 @@ def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2):
             else:  # Between tf/4 and tf-(tf/4)
                 x_reference[i, t] = spline(t)[i] 
 
-    if smooth_period != 0:
-        spline = CubicSpline([t1, t2], np.vstack([u_eq1, u_eq2]), bc_type='clamped')
+    # if smooth_percentage != 0:
+    #     spline = CubicSpline([t1, t2], np.vstack([u_eq1, u_eq2]), bc_type='clamped')
+    # for t in range(total_time_steps):
+    #         if t <= t1:  # Before tf/4
+    #             u_reference[:,t] = u_eq1
+    #         elif t > t2:  # After tf-(tf/4)
+    #             u_reference[:,t] = u_eq2
+    #         else:  # Between tf/4 and tf-(tf/4)
+    #             u_reference[:,t] = spline(t) 
+    
     for t in range(total_time_steps):
-            if t <= t1:  # Before tf/4
-                u_reference[:,t] = u_eq1
-            elif t > t2:  # After tf-(tf/4)
-                u_reference[:,t] = u_eq2
-            else:  # Between tf/4 and tf-(tf/4)
-                u_reference[:,t] = spline(t) 
+        u_reference[0,t] = 44*np.sin(x_reference[2,t])
 
     return x_reference, u_reference
 
 
 
-def plot_trajectory(x_reference, u_reference):
+def plot_trajectory(x_reference, u_reference, t_f=pm.t_f, dt=pm.dt):
 
     total_time_steps = int(t_f / dt)
     time = np.linspace(0, t_f, total_time_steps)
