@@ -1,0 +1,105 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from newton_method import newton_method
+import reference_trajectory
+import parameters as pm
+from visualizer import animate_double_pendulum as anim
+import data_manager as dm
+
+
+def calculate_dtheta1_dtheta2(x_reference):
+    dtheta1 = np.diff(x_reference[2, :])/pm.dt
+    dtheta2 = np.diff(x_reference[3, :])/pm.dt
+    dtheta1 = np.append(dtheta1, dtheta1[-1])
+    dtheta2 = np.append(dtheta2, dtheta2[-1])
+    
+    return dtheta1, dtheta2
+
+np.set_printoptions(linewidth=100)
+
+# eq_list =    [   0,   np.pi,  np.pi+np.pi/2+0.01, 2*np.pi+np.pi/2-0.01,   2*np.pi]
+# eq_time = [8,    8,       8,                   8,                    8,         8]
+# eq_smooth =  [ 0.2,     0.2,                 0.2,                  0.2,       0.2]
+# eq_state = ["normal", "normal", "normal", "normal", "normal", "normal"]
+
+eq_list =    [    0, np.pi/4,           3*np.pi/4,            5*np.pi/4, 7*np.pi/4, 2*np.pi]
+eq_time = [2.5,  10,      10,                  10,                    10,       10,     2.5]
+eq_smooth =  [  0.3,     0.3,                 0.3,                  0.3,       0.3,     0.3]
+eq_state = ["normal", "normal", "normal", "normal", "normal", "normal"]
+
+# eq_list =    [     -np.pi/2+0.01, np.pi/2]
+# eq_time = [2,                  1,       7]
+# eq_smooth =  [                 1,       1]
+# eq_state = ["normal", "upsidedown", "upsidedown"]
+
+equilibria = np.empty((len(eq_list), 3))
+x_eq = np.empty((len(eq_list), 4))
+u_eq = np.empty((len(eq_list), 1))
+
+state="upsidedown"
+K_eq = 44
+for i, eq in enumerate(eq_list):
+    if eq_state[i]=="normal" or i >len(eq_state)-1:
+        equilibria[i] = np.array([eq, -eq, K_eq * np.sin(eq)])
+        x_eq[i], u_eq[i] = newton_method(equilibria[i][:,None])
+    else:
+        equilibria[i] = np.array([eq, -np.pi-eq, K_eq * np.sin(eq)])
+        x_eq[i], u_eq[i] = newton_method(equilibria[i][:,None])
+
+# Initial state and input
+print("Initial state:\t", x_eq[0].T, "\tInitial input:\t", u_eq[0].T)
+print("Final state:\t", x_eq[-1].T, "\tFinal Input:\t", u_eq[-1].T)
+
+
+x_ref_list = []
+u_ref_list = []
+
+for i in range(len(eq_time)):
+    if i == 0:
+        x_ref, u_ref = reference_trajectory.generate_trajectory(
+            x_eq[i], x_eq[i], u_eq[i], u_eq[i], 0, eq_time[i]
+        )
+    elif i == len(eq_time)-1:
+        x_ref, u_ref = reference_trajectory.generate_trajectory(
+            x_eq[-1], x_eq[-1], u_eq[-1], u_eq[-1], 0, eq_time[-1]
+        )
+    else:
+        x_ref, u_ref = reference_trajectory.generate_trajectory(
+            x_eq[i-1], x_eq[i], u_eq[i-1], u_eq[i], eq_smooth[i-1], eq_time[i]
+        )
+        
+    # else:
+    #     x_ref, u_ref = reference_trajectory.generate_trajectory(
+    #         x_eq[i-1], x_eq[i], u_eq[i-1], u_eq[i], eq_smooth[i-1], eq_time[i-1]
+    #     )
+    x_ref_list.append(x_ref)
+    u_ref_list.append(u_ref)
+
+# Stack the segments to form the complete trajectory
+x_reference = np.hstack(x_ref_list)
+u_reference = np.hstack(u_ref_list)
+
+dtheta1, dtheta2 = calculate_dtheta1_dtheta2(x_reference)
+x_reference[0,:] = dtheta1
+x_reference[1,:] = dtheta2
+
+fig, axs = plt.subplots(2, 1, figsize=(12, 10))
+axs[0].plot(x_reference[0, :], label=r'$\dot \theta_1^{ref}$', color='m', linewidth=2)
+axs[0].plot(x_reference[1, :], label=r'$\dot \theta_2^{ref}$', color='orange', linewidth=2)
+axs[0].plot(x_reference[2, :], label=r'$\theta_1^{ref}$', color='b', linewidth=2)
+axs[0].plot(x_reference[3, :], label=r'$\theta_2^{ref}$', color='g', linewidth=2)
+axs[0].legend(loc='best')
+axs[0].set_title("Reference State Trajectories")
+axs[0].grid(True)
+axs[1].plot(u_reference[0, :], label=r'$\tau_1^{ref}$', color='r', linewidth=2)
+axs[1].legend(loc='best')
+axs[1].set_title("Reference Input Trajectory")
+axs[1].grid(True)
+plt.tight_layout()
+plt.show()
+
+anim(x_reference.T)
+
+print(x_reference.shape)
+
+dm.save_optimal_trajectory(x_reference, u_reference)
