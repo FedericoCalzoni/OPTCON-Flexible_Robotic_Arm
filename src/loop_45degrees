@@ -45,57 +45,27 @@ def generate_circular_trajectory(r, omega, xc, yc, L1, L2, tf_circle, dt):
     return theta1_sequence, theta2_sequence
 
 
-
-
-z_0_eq1 = np.array([[-np.pi/2+0.01], [np.pi/2-0.01], [-44]])
-z_0_eq2 = np.array([[0], [0], [0]])
-z_0_eq3 = np.array([[np.pi/2-0.01], [-np.pi/2+0.01], [+44]])
-# z_0_eq1 = np.array([[np.pi+np.pi/2.1], [-np.pi/2.1], [-40]])
-# z_0_eq2 = np.array([[np.pi-np.pi/2.1], [+np.pi/2.1], [+40]])
-x_eq1, u_eq1 = newton_method(z_0_eq1)
-x_eq2, u_eq2 = newton_method(z_0_eq2)
-x_eq3, u_eq3 = newton_method(z_0_eq3)
-t_0 = 4
-t_1 = 0.7
-t_2 = 0.8
-t_3 = 0.7
-t_4 = 4
-
-# Initial state and input
-print("Initial state:\t", x_eq1.T ,"\tInitial input:\t", u_eq1.T)
-print("Final state:\t", x_eq3.T, "\tFinal Input:\t", u_eq3.T)
-
-smooth_percentage = 1
-
-
-# Parameters
-r = 0.2  # Radius of the circular trajectory
-omega = -2*np.pi/t_2  # Angular velocity (rad/s)
-xc = 0  # Center x-coordinate
-yc = -3 + r  # Center y-coordinate
-# tf_circle = 1  # Total time for circular motion
 L1 = 1.5  # Length of the first pendulum arm
 L2 = 1.5  # Length of the second pendulum arm
+t_2 = 10
+# Parameters
+r = 0.2  # Radius of the circular trajectory
+omega = -4*np.pi/t_2  # Angular velocity (rad/s)
+xc = + L1 * np.cos(np.pi/4)  # Center x-coordinate
+yc = - L1 * np.cos(np.pi/4) - L2# Center y-coordinate
+# tf_circle = 1  # Total time for circular motion
+
 dt = 1e-3  # Time step
 K_eq = 44
 theta1_sequence, theta2_sequence = generate_circular_trajectory(r, omega, xc, yc, L1, L2, t_2, dt)
 
-x_reference_2 = np.zeros((4, len(theta1_sequence)))
-u_reference_2 = np.zeros((1, len(theta1_sequence)))
+x_reference = np.zeros((4, len(theta1_sequence)))
+u_reference = np.zeros((1, len(theta1_sequence)))
 
-x_reference_0, u_reference_0 = reference_trajectory.generate_trajectory(x_eq1, x_eq1, u_eq1, u_eq1, smooth_percentage, t_0)
-x_reference_1, u_reference_1 = reference_trajectory.generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2, smooth_percentage, t_1)
-x_reference_2[2, :] = theta1_sequence
-x_reference_2[3, :] = theta2_sequence
-u_reference_2[0, :] = K_eq * np.sin(x_reference_2[2,:])
-x_reference_3, u_reference_3 = reference_trajectory.generate_trajectory(x_eq2, x_eq3, u_eq2, u_eq3, smooth_percentage, t_3)
-x_reference_4, u_reference_4 = reference_trajectory.generate_trajectory(x_eq3, x_eq3, u_eq3, u_eq3, smooth_percentage, t_4)
-x_reference = np.hstack((x_reference_0, x_reference_1, x_reference_2, x_reference_3, x_reference_4))
-u_reference = np.hstack((u_reference_0, u_reference_1, u_reference_2, u_reference_3, u_reference_4))
+x_reference[2, :] = theta1_sequence
+x_reference[3, :] = theta2_sequence
+u_reference[0, :] = K_eq * np.sin(x_reference[2,:])
 
-# dm.save_mpc_trajectory(x_reference, u_reference)
-
-# Define the path to the text file
 # plot x_reference and u_reference
 plt.figure(figsize=(10, 10))
 plt.plot(x_reference[0, :], label=r'$\dot \theta_1^{ref}$', color='m', linewidth=2)
@@ -109,4 +79,8 @@ plt.figure(figsize=(10, 5))
 plt.plot(u_reference[0, :], label=r'$\tau_1^{ref}$', color='r', linewidth=2)
 plt.legend()
 
+print(x_reference.shape)
+
 anim(x_reference.T)
+
+dm.save_mpc_trajectory(x_reference, u_reference)
