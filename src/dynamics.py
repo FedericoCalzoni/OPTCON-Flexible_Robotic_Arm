@@ -80,6 +80,27 @@ def dynamics(x, u):
         
     return x_new
 
+def inverse_dynamics(x_precedent, x_actual):
+    ddtheta1 = x_actual[0] - x_precedent[0]
+    ddtheta2 = x_actual[1] - x_precedent[1]
+    dtheta1 = x_actual[0].item()
+    dtheta2 = x_actual[1].item()
+    theta1 = x_actual[2].item()
+    theta2 = x_actual[3].item()
+    
+    ddthetas = np.array([ddtheta1, ddtheta2])[:,None]
+    dthetas = np.array([dtheta1, dtheta2])[:,None]
+    
+    M = compute_inertia_matrix(theta2)
+    C = compute_coriolis(theta2, dtheta1, dtheta2)
+    G = compute_gravity(theta1, theta2)
+    
+    u = np.zeros((1, 1))
+    
+    u = M @ ddthetas + C + F @ dthetas + G
+    
+    return u    
+
 def jacobian_gravity(theta1, theta2):
     JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)
     JG_12 = G*M2*R2*np.cos(theta1 + theta2)
