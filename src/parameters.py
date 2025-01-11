@@ -65,7 +65,7 @@ def compute_intervals(total_time, num_divisions, transition_width, rest_start, r
         transition_middle = int((start + end) / 2)
         transition_start = min(end, start + int(transition_width / 2))
         intervals.append((start, transition_start, transition_middle, transition_end, end))
-    print(intervals)
+    # print(intervals)
     return intervals
 
 def cost_matrices_computation(Qt_temp, Rt_temp, total_time, num_divisions, transition_width):
@@ -74,8 +74,8 @@ def cost_matrices_computation(Qt_temp, Rt_temp, total_time, num_divisions, trans
     """
     num_states = Qt_temp.shape[0]
     num_controls = Rt_temp.shape[0]
-    rest_start = 2500
-    rest_end = 2500
+    rest_start = 2000
+    rest_end = 2000
     Qt_final = np.zeros((num_states, num_states, total_time))
     Rt_final = np.zeros((num_controls, num_controls, total_time))
 
@@ -122,7 +122,7 @@ F1 = 0.1
 F2 = 0.1
 
 t_i = 0
-t_f = 55
+t_f = 36
 dt = 1e-3
 TT = int((t_f - t_i)/dt)
 
@@ -134,9 +134,9 @@ MPC_trajectory_given = True
 ##      Task 1 and 2 parameters     ##
 ######################################
 
-smooth_percentage = 0.2
-transition_width = 1000
-divisions = 5
+smooth_percentage = 0.5
+transition_width = 700
+divisions = 4
 
 #Cost Function Parameters
 # Initialize matrices
@@ -146,16 +146,67 @@ Rt_temp = np.zeros((1, 1, 2))
 # Phase values
 # Assign values
 
-Qt_temp[:, :, 0] = np.diag([60000, 130000, 10000000, 3000000])   # Constant phase
-Rt_temp[:, :, 0] = np.diag([40])                                 # Constant phase
-Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1])                  # Transition phase
-Rt_temp[:, :, 1] = np.diag([40]) 
+# Qt_temp[:, :, 0] = np.diag([80000, 100000, 5000000, 300000])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([500])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([20, 20, 1000, 0])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([500]) 
+
+# Qt_temp[:, :, 0] = np.diag([60162, 130281, 4999904, 300011])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([55.8])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([1e-8, 1e-8, 1.54, 1e-8])                   # Transition phase
+# Rt_temp[:, :, 1] = np.diag([16.54]) 
+
+# Qt_temp[:, :, 0] = np.diag([1000, 1000, 500000, 30000])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([50])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([20, 20, 20, 0])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([50]) 
+
+# Qt_temp[:, :, 0] = np.diag([60000, 130000, 5000000, 100000])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([80])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([60, 13000, 100, 0])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([80]) 
+
+# Qt_temp[:, :, 0] = np.diag([59158.74622544, 129245.63949172, 4999870.45305163, 299992.96147837])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([75.83220289])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([61.26095827, 26.20654226, 47.82525748, 26.32315921])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([14.86213965]) 
+
+# Qt_temp[:, :, 0] = np.diag([59158.74622544, 129245.63949172, 4999870.45305163, 299992.96147837])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([75.83220289])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([0, 0, 0, 0])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([7.86213965]) 
+
+# Qt_temp[:, :, 0] = np.diag([59158.74622544, 129245.63949172, 4999870.45305163, 299992.96147837])   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([75.83220289])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([61.26095827, 26.20654226, 47.82525748, 26.32315921])                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([14.86213965]) 
+
+# # Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e8   # Constant phase
+# Rt_temp[:, :, 0] = np.diag([1]) * 1e2                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([1,1,1,1]) * 0                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([3]) * 1e3 
+
+
+# DA INCORNICIARE REFERENCE=111, OUTPUT117
+Qt_temp[:, :, 0] = np.diag([9.99854091, 999.331936, 4909.934141, 10.0133061]) *1e7  # Constant phase
+Rt_temp[:, :, 0] = np.diag([270.5502102])                                 # Constant phase
+Qt_temp[:, :, 1] = np.diag([0, 0.620181367, 0, 6.79470332])                   # Transition phase
+Rt_temp[:, :, 1] = np.diag([296.05527468])
+
+# # DA TATUARE
+# Qt_temp[:, :, 0] = np.diag([1.00001241, 99.9331399, 490.9935389, 1.00096131]) *1e8  # Constant phase
+# Rt_temp[:, :, 0] = np.diag([265.5499998])                                 # Constant phase
+# Qt_temp[:, :, 1] = np.diag([1.02688787, 0.00000001, 3.33155371, 4.92487656]) * 0                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([299.40677386])
+
+
+
 
 # Assign final results
 Qt, Rt = cost_matrices_computation(Qt_temp, Rt_temp, TT, divisions, transition_width)
 QT = Qt[:, :, -1]
 
-print(Qt.shape, Rt.shape)
+# print(Qt.shape, Rt.shape)
 
 # from matplotlib import pyplot as plt
 # for i in range(4):
@@ -170,28 +221,30 @@ beta = 0.7
 Arm_plot = False
 Arm_plot_every_k_iter = 2
 
-Newton_Optcon_Plots = True
+Newton_Optcon_Plots = False
 Newton_Plot_every_k_iterations = 2
-plot_states_at_last_iteration = True
+plot_states_at_last_iteration = False
 
 ################################
 ##      Task 3 Parameters     ##
 ################################  
 
-state_perturbation_percentage = 0.01
-affine_perturbation = 0.05
-#Cost Function Parameters
-transition_width = TT/8
-#Cost Function Parameters
-# Initialize matrices
+state_perturbation_percentage = 0
+affine_perturbation = 0
+
+# Cost Function Parameters
 Qt_temp_reg = np.zeros((4, 4, 2))
 Rt_temp_reg = np.zeros((1, 1, 2))
 
-# Phase values
 Qt_temp_reg[:, :, 0] = np.diag([1, 1, 1, 1]) * 1e7
 Rt_temp_reg[:, :, 0] = np.diag([5]) * 1e1
 Qt_temp_reg[:, :, 1] = np.diag([1, 1, 1, 1]) * 1e2
 Rt_temp_reg[:, :, 1] = np.diag([1]) * 1e0
+
+# Qt_temp_reg[:, :, 0] = np.diag([0, 0, 4909.934141, 10.0133061]) *1e5  # Constant phase
+# Rt_temp_reg[:, :, 0] = np.diag([27.5502102])                                 # Constant phase
+# Qt_temp_reg[:, :, 1] = np.diag([0, 0.620181367, 0, 6.79470332])                   # Transition phase
+# Rt_temp_reg[:, :, 1] = np.diag([2.05527468])
 
 Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, TT, divisions, transition_width)
 QT_reg = Qt_reg[:, :, -1]

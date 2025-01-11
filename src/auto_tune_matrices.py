@@ -174,10 +174,14 @@ def tune_cost_matrices(x_reference, u_reference, num_iterations=10000, perturbat
     """
     Qt_temp = np.zeros((4, 4, 2))
     Rt_temp = np.zeros((1, 1, 2))
-    Qt_temp[:, :, 0] = np.diag([60000, 130000, 5000000, 300000])   # Constant phase
-    Rt_temp[:, :, 0] = np.diag([40])                                 # Constant phase
-    Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1])                  # Transition phase
-    Rt_temp[:, :, 1] = np.diag([40]) 
+    # Qt_temp[:, :, 0] = np.diag([59565.50815028, 129466.83174896, 5000231.63033068, 299772.1354184])   # Constant phase
+    # Rt_temp[:, :, 0] = np.diag([61.93269819])                                 # Constant phase
+    # Qt_temp[:, :, 1] = np.diag([62.14345657, 28.26521521, 45.20548933, 25.94358565])                  # Transition phase
+    # Rt_temp[:, :, 1] = np.diag([13.5312041]) 
+    Qt_temp[:, :, 0] = np.diag([1.00001241, 99.9331399, 490.9935389, 1.00096131]) *1e8  # Constant phase
+    Rt_temp[:, :, 0] = np.diag([265.5499998])                                 # Constant phase
+    Qt_temp[:, :, 1] = np.diag([1.02688787, 0.00000001, 3.33155371, 4.92487656]) * 1                  # Transition phase
+    Rt_temp[:, :, 1] = np.diag([299.40677386])
     TT = int((pm.t_f - pm.t_i)/pm.dt)
     transition_width = 3000
     divisions = 5
@@ -193,10 +197,10 @@ def tune_cost_matrices(x_reference, u_reference, num_iterations=10000, perturbat
         Rt_temp_new = np.copy(Rt_temp)
         
         # Add perturbations to diagonal elements only
-        Qt_temp_new[:, :, 0] += np.diag(10*perturbation_scale * np.random.randn(Qt_temp.shape[1]))
-        Qt_temp_new[:, :, 1] += np.diag(perturbation_scale * np.random.randn(Qt_temp.shape[1]))
+        Qt_temp_new[:, :, 0] += np.diag(1000*perturbation_scale * np.random.randn(Qt_temp.shape[1]))
+        Qt_temp_new[:, :, 1] += np.diag(0.1*perturbation_scale * np.random.randn(Qt_temp.shape[1]))
         Rt_temp_new[:, :, 0] += np.diag(perturbation_scale * np.random.randn(Rt_temp.shape[1]))
-        Rt_temp_new[:, :, 1] += np.diag(perturbation_scale * np.random.randn(Rt_temp.shape[1]))
+        Rt_temp_new[:, :, 1] += np.diag(0.1*perturbation_scale * np.random.randn(Rt_temp.shape[1]))
         
         Qt_temp_new[:, :, 0] = np.diag(np.maximum(np.diag(Qt_temp_new[:, :, 0]), 1e-8))
         Qt_temp_new[:, :, 1] = np.diag(np.maximum(np.diag(Qt_temp_new[:, :, 1]), 1e-8))
@@ -220,10 +224,10 @@ def tune_cost_matrices(x_reference, u_reference, num_iterations=10000, perturbat
         else:
             print(f"Iteration {iteration}: No improvement, cost remains {current_cost}")
         
-        print(f"Qt_temp: {Qt_temp[:,:,0]}")
-        print(f"Rt_temp: {Rt_temp[:,:,0]}")
-        print(f"Qt_temp: {Qt_temp[:,:,1]}")
-        print(f"Rt_temp: {Rt_temp[:,:,1]}")
+        print(f"Qt_temp: [{Qt_temp[0,0,0]}, {Qt_temp[1,1,0]}, {Qt_temp[2,2,0]}, {Qt_temp[3,3,0]}]")
+        print(f"Rt_temp: [{Rt_temp[0,0,0]}]")
+        print(f"Qt_temp: [{Qt_temp[0,0,1]}, {Qt_temp[1,1,1]}, {Qt_temp[2,2,1]}, {Qt_temp[3,3,1]}]")
+        print(f"Rt_temp: [{Rt_temp[0,0,1]}]")
         
         # Optionally, we could print the matrices at intervals to observe progress
     
@@ -238,7 +242,7 @@ def newton_for_optcon(x_reference, u_reference, Q_tuned, R_tuned):
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]
-    max_iterations = 5
+    max_iterations = 4
     
     l = np.zeros((max_iterations)) # Cost function
     x_initial_guess = x_reference[:,0]
@@ -401,7 +405,7 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
 
     return K, Sigma, delta_u
 
-x_reference, u_reference = dm.load_optimal_trajectory(version = '76')
+x_reference, u_reference = dm.load_optimal_trajectory(version = '99')
 Qt_temp, Rt_temp = tune_cost_matrices(x_reference, u_reference)
 
 

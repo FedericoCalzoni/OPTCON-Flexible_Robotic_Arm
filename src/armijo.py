@@ -6,7 +6,7 @@ import dynamics as dyn
 
 def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, step_size_0=0.1):
 
-    max_iterations = 100
+    max_iterations = 10
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
 
@@ -65,6 +65,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
             step_size = beta * step_size
             if i == max_iterations-2:
                 print(f'Armijo method did not converge in {max_iterations} iterations')
+                step_size = 0
                 break
 
         else:
@@ -100,7 +101,6 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         plt.grid()
         plt.legend()
         plt.show()
-
 
 
     return step_size

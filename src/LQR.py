@@ -105,7 +105,6 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
     P[:,:,-1] = QT_Star
 
     for t in reversed(range(TT-1)):
-        # Assegna ciascun valore ad una variabile temporanea per rendere l'equazione comprensibile
         At  = A[:,:,t]
         Bt  = B[:,:,t]
         Qt  = Qt_Star[:,:,t]

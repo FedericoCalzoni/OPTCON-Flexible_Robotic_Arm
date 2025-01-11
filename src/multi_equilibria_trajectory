@@ -17,20 +17,10 @@ def calculate_dtheta1_dtheta2(x_reference):
 
 np.set_printoptions(linewidth=100)
 
-# eq_list =    [   0,   np.pi,  np.pi+np.pi/2+0.01, 2*np.pi+np.pi/2-0.01,   2*np.pi]
-# eq_time = [8,    8,       8,                   8,                    8,         8]
-# eq_smooth =  [ 0.2,     0.2,                 0.2,                  0.2,       0.2]
-# eq_state = ["normal", "normal", "normal", "normal", "normal", "normal"]
-
-eq_list =    [    0, np.pi/4,           3*np.pi/4,            5*np.pi/4, 7*np.pi/4, 2*np.pi]
-eq_time = [2.5,  10,      10,                  10,                    10,       10,     2.5]
-eq_smooth =  [  0.3,     0.3,                 0.3,                  0.3,       0.3,     0.3]
-eq_state = ["normal", "normal", "normal", "normal", "normal", "normal"]
-
-# eq_list =    [     -np.pi/2+0.01, np.pi/2]
-# eq_time = [2,                  1,       7]
-# eq_smooth =  [                 1,       1]
-# eq_state = ["normal", "upsidedown", "upsidedown"]
+eq_list =    [ -np.pi/2,           +np.pi/2,            -np.pi/4,  + np.pi/4,       0]
+eq_time = [  2,       8,                  8,                   8,          8,       2]
+eq_smooth =  [      0.5,                 0.5,                 0.5,       0.5,     0.5]
+eq_state = ["normal", "normal", "normal", "normal", "normal"]
 
 equilibria = np.empty((len(eq_list), 3))
 x_eq = np.empty((len(eq_list), 4))
