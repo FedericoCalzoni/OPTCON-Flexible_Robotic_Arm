@@ -17,9 +17,9 @@ def calculate_dtheta1_dtheta2(x_reference):
 
 np.set_printoptions(linewidth=100)
 
-eq_list =    [ -np.pi/2,           +np.pi/2,            -np.pi/4,  + np.pi/4,       0]
-eq_time = [  2,       8,                  8,                   8,          8,       2]
-eq_smooth =  [      0.5,                 0.5,                 0.5,       0.5,     0.5]
+eq_list =    [ -np.pi/2,  +np.pi/2, -np.pi/4,  + np.pi/4,     0]
+eq_time = [  2,       8,         8,        8,          8,     2]
+eq_smooth =  [      0.5,       0.5,      0.5,        0.5,   0.5]
 eq_state = ["normal", "normal", "normal", "normal", "normal"]
 
 equilibria = np.empty((len(eq_list), 3))
@@ -92,4 +92,4 @@ anim(x_reference.T)
 
 print(x_reference.shape)
 
-dm.save_optimal_trajectory(x_reference, u_reference)
+# dm.save_optimal_trajectory(x_reference, u_reference)
