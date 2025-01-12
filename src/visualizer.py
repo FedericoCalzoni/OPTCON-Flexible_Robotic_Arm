@@ -19,7 +19,7 @@ def animate_double_pendulum(x_history):
     L2 = pm.L2
 
     if dt == 1e-3:
-        beta = 1
+        beta = 3
     elif dt == 1e-2:
         beta = 10
         
