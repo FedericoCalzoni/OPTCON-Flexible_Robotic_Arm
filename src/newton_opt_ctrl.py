@@ -50,20 +50,34 @@ def newton_for_optcon(x_reference, u_reference):
         u_optimal[:,t, 0] = u_initial_guess
 
     # Apply newton method to compute the optimal trajectory
+    GradJ_u_history = []  # Store GradJ_u history
+    delta_u_history = []  # Store delta_u history
+    
     for k in range(max_iterations):
         first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
         
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
 
+        # Relative cost reduction stopping criteria
         if k == 0:
             print(f"\nIteration: {k} \tCost: {l[k]}")
-
         else:
             # Check if the terminal condition is satisfied
             relative_cost_reduction = np.abs(l[k] - l[k-1])/l[k-1]
             print(f"\nIteration: {k} \tCost: {l[k]} \tCost reduction: {l[k] - l[k-1]} \tRelative cost reduction: {relative_cost_reduction}")
             if relative_cost_reduction < 1e-10 or relative_cost_reduction > 1:
                 break
+        
+        # # Gradient norm stopping criteria
+        # if k == 0:
+        #     print(f"\nIteration: {k} \tCost: {l[k]}")
+        # else: 
+        #     norm_GradJ_u = np.linalg.norm(GradJ_u)
+        #     print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tGradient Norm: {norm_GradJ_u}")
+            
+        #     # Modified stopping criterion based on gradient norm
+        #     if norm_GradJ_u < 1e-10:
+        #         break
         
         # Initialization of x0 for the next iteration
         x_optimal[:,0, k+1] = x_initial_guess
@@ -119,7 +133,7 @@ def newton_for_optcon(x_reference, u_reference):
     newton_finished = True
     first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
     plot_optimal_intermediate_trajectory(x_reference, u_reference, x_optimal, u_optimal, k)
-    return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u
+    return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u_history, delta_u_history
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
     x_size = x_reference.shape[0]
@@ -312,3 +326,94 @@ def plot_optimal_intermediate_trajectory(x_reference, u_reference, x_gen, u_gen,
     plt.tight_layout()
     plt.show()
 
+def plot_norm_delta_u(delta_u_history):
+    """
+    Plot the norm of delta_u at each iteration k in semi-logarithmic scale.
+
+    Parameters:
+    delta_u_history (list): List of delta_u matrices for each iteration.
+    """
+    # Compute the Frobenius norm for each iteration's delta_u matrix
+    norms = [np.linalg.norm(delta_u.flatten()) for delta_u in delta_u_history]
+    iterations = np.arange(len(delta_u_history))
+
+    plt.figure(figsize=(7, 4))
+    # Points and line in mediumblue
+    plt.semilogy(iterations, norms, '.', color='indigo', markersize=8)
+    plt.semilogy(iterations, norms, '-', color='indigo', linewidth=2, alpha=0.8,
+                 label=r'$\|\Delta u_k\|$')
+
+    # Customize grid
+    plt.grid(True, which="both", ls=":", alpha=0.2)
+    plt.grid(True, which="major", ls="-", alpha=0.4)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$\|\Delta u_k\|$', fontsize=12)
+    
+    # Improve legend with only line
+    plt.legend(loc='upper right', fontsize=11, framealpha=1.0, 
+              edgecolor='black', fancybox=False)
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_norm_grad_J(grad_J_history):
+    """
+    Plot the norm of grad_J at each iteration k in semi-logarithmic scale.
+
+    Parameters:
+    grad_J_history (list or np.ndarray): List of grad_J vectors for each iteration.
+    """
+    norms = [np.linalg.norm(grad_J) for grad_J in grad_J_history]
+    iterations = np.arange(len(grad_J_history))
+
+    plt.figure(figsize=(7, 4))
+    # Points and line in mediumblue
+    plt.semilogy(iterations, norms, '.', color='indigo', markersize=8)
+    plt.semilogy(iterations, norms, '-', color='indigo', linewidth=2, alpha=0.8,
+                 label=r'$\|\nabla J(u^k)\|$')
+
+    # Customize grid
+    plt.grid(True, which="both", ls=":", alpha=0.2)
+    plt.grid(True, which="major", ls="-", alpha=0.4)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$\|\nabla J(u^k)\|$', fontsize=12)
+    
+    # Improve legend with only line
+    plt.legend(loc='upper right', fontsize=11, framealpha=1.0,
+              edgecolor='black', fancybox=False)
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_cost_evolution(cost_history):
+    """
+    Plot the cost value at each iteration k in semi-logarithmic scale to show descent.
+
+    Parameters:
+    cost_history (list or np.ndarray): List of cost values for each iteration.
+    """
+    iterations = np.arange(len(cost_history))
+
+    plt.figure(figsize=(7, 4))
+    
+    # Points and line in indigo
+    plt.semilogy(iterations, cost_history, '.', color='indigo', markersize=8)
+    plt.semilogy(iterations, cost_history, '-', color='indigo', linewidth=2, alpha=0.8,
+                 label=r'$J(u^k)$')
+
+    # Customize grid
+    plt.grid(True, which="both", ls=":", alpha=0.2)
+    plt.grid(True, which="major", ls="-", alpha=0.4)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$J(u^k)$', fontsize=12)
+    plt.title('Cost Evolution', fontsize=12)
+    
+    # Improve legend with only line
+    plt.legend(loc='upper right', fontsize=11, framealpha=1.0,
+              edgecolor='black', fancybox=False)
+    
+    plt.tight_layout()
+    plt.show()
