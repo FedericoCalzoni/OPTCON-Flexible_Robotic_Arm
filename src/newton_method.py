@@ -26,7 +26,7 @@ def newton_method(initial_guess, step_size=1e-2, iterations=1000):
         z_2 = z[2].item()
         J_z = jacobian_function(z_0, z_1)
         r_z = compute_gravity(z_0, z_1)- [[z_2], [0]]
-        #TODO: use armijo rule to find the step size
+        # armijo could be used to increase the convergence speed
         try:
             delta_z = - step_size * np.linalg.pinv(J_z) @ r_z
             z = z + delta_z
