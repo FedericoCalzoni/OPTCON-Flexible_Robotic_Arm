@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from parameters import beta, c, Arm_plot, Arm_plot_every_k_iter
+from parameters import beta, c, Arm_plot, Arm_plot_every_k_iter, arm_max_iter
 import cost
 import dynamics as dyn
 
 def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, step_size_0=0.1):
 
-    max_iterations = 10
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
 
@@ -30,7 +29,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
     x_update = np.zeros((x_size,horizon))
     u_update = np.zeros((u_size,horizon))
     
-    for i in range(max_iterations):
+    for i in range(arm_max_iter):
         x_update[:,:] = x_trajectory
         u_update[:,:] = u_trajectory
 
@@ -43,16 +42,11 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
     for t in range(horizon-1):
         descent = descent + gradJ[:,t] * delta_u[:,t]
 
-    for i in range(max_iterations-1):
+    for i in range(arm_max_iter-1):
         x_update[:,:] = x_trajectory
         u_update[:,:] = u_trajectory
         for t in range(horizon-1):
             u_update[:,t] = u_trajectory[:,t] + Kt[:,:,t] @ (x_update[:,t] - x_trajectory[:,t]) + sigma_t[:,t] * step_size
-            # limit the input
-            if u_update[:,t] > 100:
-                u_update[:,t] = 100
-            elif u_update[:,t] < -100:
-                u_update[:,t] = -100
             x_update[:,t+1] = dyn.dynamics(x_update[:,t].reshape(-1, 1), u_update[:,t].reshape(-1, 1))
 
         J_temp = cost.J_Function(x_update, u_update, x_reference, u_reference, "LQR")
@@ -63,8 +57,8 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         if (J_temp > J + c * step_size * descent):
             #print('J_temp = {}'.format(J_temp))
             step_size = beta * step_size
-            if i == max_iterations-2:
-                print(f'Armijo method did not converge in {max_iterations} iterations')
+            if i == arm_max_iter-2:
+                print(f'Armijo method did not converge in {arm_max_iter} iterations')
                 step_size = 0
                 break
 

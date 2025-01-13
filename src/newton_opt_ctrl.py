@@ -7,20 +7,22 @@ import matplotlib.cm as cm
 from numpy.linalg import inv
 import armijo as armijo
 from visualizer import animate_double_pendulum as anim
+import data_manager as dm
+from LQR import LQR_system_regulator as LQR
 
 def newton_for_optcon(x_reference, u_reference):
     print('\n\n\
-    \t--------------------------------------------\n \
-    \tLaunching: Newton Method for Optimal Control\n \
-    \t--------------------------------------------')
+    \t\t--------------------------------------------\n \
+    \t\tLaunching: Newton Method for Optimal Control\n \
+    \t\t--------------------------------------------')
     x_size = x_reference.shape[0]
     u_size = u_reference.shape[0]
     TT = x_reference.shape[1]
-    max_iterations = 30
+    max_iterations = 300
     
     l = np.zeros((max_iterations)) # Cost function
-    x_initial_guess = x_reference[:,0]
-    u_initial_guess = u_reference[:,0]
+    # x_initial_guess = x_reference[:,0]
+    # u_initial_guess = u_reference[:,0]
 
     x_optimal = np.zeros((x_size, TT, max_iterations+1))
     u_optimal = np.zeros((u_size, TT, max_iterations+1))
@@ -31,7 +33,7 @@ def newton_for_optcon(x_reference, u_reference):
     Lambda = np.zeros((4,TT))
     GradJ_u = np.zeros((u_size,TT-1))
 
-    Qt_Star = np.zeros((x_size,x_size,TT-1))
+    Qt_Star = np.zeros((x_size, x_size,TT-1))
     St_Star = np.zeros((u_size, x_size,TT-1))
     Rt_Star = np.zeros((u_size, u_size,TT-1))
 
@@ -45,9 +47,20 @@ def newton_for_optcon(x_reference, u_reference):
     newton_finished = False
 
     # Initialize the first instance of the optimal trajectory
-    for t in range(TT):
-        x_optimal[:,t, 0] = x_initial_guess
-        u_optimal[:,t, 0] = u_initial_guess
+    # for t in range(TT):
+    #     x_optimal[:,t, 0] = x_initial_guess
+    #     u_optimal[:,t, 0] = u_initial_guess
+
+    
+    # if pm.initial_guess_given:
+    #     x_optimal[:,:, 0], u_optimal[:,:, 0] = dm.load_optimal_trajectory('29')
+    if  True:
+        x_optimal[:,:, 0] = x_reference
+        u_optimal[:,:, 0] = Initial_Lchiuar(x_reference, u_reference)
+    else:
+        for t in range(TT):
+            x_optimal[:,t, 0] = x_reference[:,t]
+            u_optimal[:,t, 0] = u_reference[:,t]
 
     # Apply newton method to compute the optimal trajectory
     for k in range(max_iterations):
@@ -55,7 +68,7 @@ def newton_for_optcon(x_reference, u_reference):
         
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
 
-        if k == 0:
+        if k <= 1:
             print(f"\nIteration: {k} \tCost: {l[k]}")
 
         else:
@@ -66,7 +79,7 @@ def newton_for_optcon(x_reference, u_reference):
                 break
         
         # Initialization of x0 for the next iteration
-        x_optimal[:,0, k+1] = x_initial_guess
+        x_optimal[:,0, k+1] = x_reference[:, 0]
         
         # Compute the Jacobians of the dynamics and the cost
         for t in range(TT-1):
@@ -89,7 +102,7 @@ def newton_for_optcon(x_reference, u_reference):
         # Adopt Regularization methods
         for t in range(TT-1):
             Qt_Star[:,:,t] = cost.hessian1_J(t)           
-            Rt_Star[:,:,t] = cost.hessian2_J(t)           
+            Rt_Star[:,:,t] = cost.hessian2_J(t)         
             St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k])  
         QT_Star = cost.hessian_terminal_cost()
 
@@ -106,13 +119,15 @@ def newton_for_optcon(x_reference, u_reference):
         # Compute the proper stepsize
         #if k == 5:
             #breakpoint()
-        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
+        if k == 0:
+            gamma = 0.01
+        else:
+            gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
 
         # gamma = 0.1
 
         for t in range(TT-1): 
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_Star[:,:,t, k] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t, k]
-            u_optimal[:, t] = np.clip(u_optimal[:, t], -100, 100)
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
     print(f'Ho finito alla {k}^ iterazione')
@@ -180,7 +195,89 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
 
     return K, Sigma, delta_u
 
+def Initial_Lchiuar(x_ref, u_ref):
+    print('\n\n\
+        \t------------------------------------------\n \
+        \t\tLaunching: LQR Tracker\n \
+        \t------------------------------------------')
+    
+    x_size = x_ref.shape[0]
+    u_size = u_ref.shape[0]
+    TT = x_ref.shape[1]
 
+    x_regulator = np.zeros((x_size, TT))
+    u_regulator = np.zeros((u_size, TT))
+    x_natural_evolution = np.zeros((x_size, TT))
+    x_evolution_after_LQR = np.zeros((x_size, TT))
+
+    x_regulator[:, 0]         = x_ref[:,0]
+    x_evolution_after_LQR[:,0]= x_ref[:,0]
+
+    u_regulator = u_ref
+
+    delta_x = x_regulator - x_ref
+    delta_u = u_regulator - u_ref
+
+    Qt = np.zeros((x_size, x_size,TT-1))
+    Rt = np.zeros((u_size, u_size,TT-1))
+
+    K_Star = np.zeros((u_size, x_size, TT-1))
+
+    A = np.zeros((x_size,x_size,TT-1))
+    B = np.zeros((x_size,u_size,TT-1))
+
+    # Calcolo le jacobiane di dinamica e costo
+    for t in range(TT-1):
+        A[:,:,t] = dyn.jacobian_x_new_wrt_x(x_ref[:,t], u_ref[:,t])
+        B[:,:,t] = dyn.jacobian_x_new_wrt_u(x_ref[:,t])
+        Qt[:,:,t] = cost.hessian1_J(t)           
+        Rt[:,:,t] = cost.hessian2_J(t)              
+    QT = cost.hessian_terminal_cost()
+
+    K_Star = LQR_solver(A, B, Qt, Rt, QT)
+
+    for t in range(TT-1):
+        delta_u[:, t]  = K_Star[:,:,t] @ delta_x[:, t]
+        delta_x[:, t+1]= A[:,:,t] @ delta_x[:,t] + B[:,:,t] @ delta_u[:, t]
+    
+    for t in range(TT-1):
+        u_regulator[:,t] = u_ref[:,t] + delta_u[:,t]
+        x_regulator[:,t] = x_ref[:,t] + delta_x[:,t]
+        x_evolution_after_LQR[:,t+1] = dyn.dynamics(x_evolution_after_LQR[:,t], u_regulator[:,t])
+    return u_regulator
+
+def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
+    x_size = A.shape[0]
+    u_size = B.shape[1]
+    TT = A.shape[2]+1
+    
+    delta_x = np.zeros((x_size,TT))
+
+    P = np.zeros((x_size,x_size,TT))
+    Pt = np.zeros((x_size,x_size))
+    Ptt= np.zeros((x_size,x_size))
+    
+    K = np.zeros((u_size,x_size,TT-1))
+    Kt= np.zeros((u_size,x_size))
+
+    ######### Solve the Riccati Equation [S6C4]
+    P[:,:,-1] = QT_Star
+
+    for t in reversed(range(TT-1)):
+        At  = A[:,:,t]
+        Bt  = B[:,:,t]
+        Qt  = Qt_Star[:,:,t]
+        Rt  = Rt_Star[:,:,t]
+        Ptt = P[:,:,t+1]
+
+        temp = (Rt + Bt.T @ Ptt @ Bt)
+        inv_temp = inv(temp)
+        Kt =-inv_temp @ (Bt.T @ Ptt @ At)
+        Pt = At.T @ Ptt @ At + At.T@ Ptt @ Bt @ Kt + Qt
+
+        K[:,:,t] = Kt
+        P[:,:,t] = Pt 
+    return K
 
 def first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished):
     x_size = x_optimal.shape[0]

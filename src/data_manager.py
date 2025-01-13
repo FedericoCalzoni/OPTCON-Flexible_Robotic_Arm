@@ -7,6 +7,23 @@ import re
 ##        Save Functions       ##
 #################################
 
+def save_reference_trajectory(x_ref, u_ref):
+    """
+    Save the optimal trajectory data on a specified version of the file "Optimal_Trajectories".
+
+    Args:
+        x_optimal (NumPy.array): The optimal trajectory of the states.
+        u_optimal (NumPy.array): The optimal trajectory of the inputs.
+    Returns:
+        None
+
+    Example:
+        >>> save_optimal_trajectory(x_opt, u_opt)
+    """
+    file = "Reference_Trajectory"
+    dir = "DataArchive"
+    _save_file(x_ref, u_ref, base_name=file, directory=dir)
+
 def save_optimal_trajectory(x_optimal, u_optimal):
     """
     Save the optimal trajectory data on a specified version of the file "Optimal_Trajectories".
@@ -107,6 +124,43 @@ def _get_next_filename(base_name, directory="."):
 #################################
 ##        Load Functions       ##
 #################################
+
+def load_reference_trajectory(version='latest'):
+    """
+    Loads the optimal trajectory data from a specified version of the file.
+
+    This function retrieves the optimal state (`x_optimal`) and control (`u_optimal`) trajectories
+    from a file stored in a predefined directory. The version of the file can be specified, and the
+    default is the latest version.
+
+    Args:
+        version (str, optional): The version of the file to load. Defaults to 'latest'.
+
+    Returns:
+        tuple: A tuple containing:
+            - x_optimal (any): The optimal state trajectory loaded from the file.
+            - u_optimal (any): The optimal control trajectory loaded from the file.
+
+    Raises:
+        FileNotFoundError: If the file specified by the parameters is not found.
+        KeyError: If the expected keys ('arg0', 'arg1') are not present in the loaded file.
+        Exception: For other unforeseen errors during file loading or processing.
+
+    Example:
+        >>> x_opt, u_opt = load_optimal_trajectory(version='3')
+    """
+    file = "Reference_Trajectory"
+    dir = "DataArchive"
+
+    trajectories = _load_file(file, dir, version)
+    
+    for arg_name in trajectories:
+        match arg_name:
+            case 'arg0':
+                x_ref = trajectories[arg_name]
+            case 'arg1':
+                u_ref = trajectories[arg_name]
+    return x_ref, u_ref
 
 def load_optimal_trajectory(version='latest'):
     """

@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 import parameters as pm 
+from newton_method import newton_method
+import dynamics as dyn
 
 def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2, smooth_percentage=pm.smooth_percentage, t_f=pm.t_f, dt=pm.dt):
     total_time_steps = int(t_f / dt)
@@ -12,8 +14,8 @@ def generate_trajectory(x_eq1, x_eq2, u_eq1, u_eq2, smooth_percentage=pm.smooth_
     u_reference = np.zeros((1, total_time_steps))
 
     # Create the cubic spline for the middle region
-    t1 = t_f / (2*dt) - t_f*smooth_percentage / (2*dt)
-    t2 = t_f / (2*dt) + t_f*smooth_percentage / (2*dt)
+    t1 = total_time_steps/2 - total_time_steps*smooth_percentage / (2)
+    t2 = total_time_steps/2 + total_time_steps*smooth_percentage / (2)
   
     for i in range(x_size):
         # Create a cubic spline to interpolate between x_eq1 and x_eq2
@@ -72,3 +74,80 @@ def plot_trajectory(x_reference, u_reference, t_f=pm.t_f, dt=pm.dt):
     
     plt.tight_layout()
     plt.show()
+
+def generate_smooth_trajectory(transition_width = pm.transition_width):
+    def calculate_dtheta1_dtheta2(x_reference):
+      dtheta1 = np.diff(x_reference[2, :])/pm.dt
+      dtheta2 = np.diff(x_reference[3, :])/pm.dt
+      dtheta1 = np.append(dtheta1, dtheta1[-1])
+      dtheta2 = np.append(dtheta2, dtheta2[-1])
+      return dtheta1, dtheta2
+    
+    x_size = 4
+    u_size = 1
+
+    ### Compute each equilibrium point
+    eq_list = [ -np.pi/2,  +np.pi/2, -np.pi/4,  + np.pi/4,     0]
+    eq_state = ["normal", "normal", "normal", "normal", "normal"]
+    equilibria = np.empty((len(eq_list), 3))
+    x_eq = np.empty((len(eq_list), x_size))
+    u_eq = np.empty((len(eq_list), u_size))
+
+    K_eq = 44 # Derived by hand, approximated
+    for i, eq in enumerate(eq_list):
+        if eq_state[i]=="normal" or i >len(eq_state)-1:
+            equilibria[i] = np.array([eq, -eq, K_eq * np.sin(eq)])
+            x_eq[i], u_eq[i] = newton_method(equilibria[i][:,None])
+        elif eq_state[i]=="upsidedown":
+            equilibria[i] = np.array([eq, -np.pi-eq, K_eq * np.sin(eq)])
+            x_eq[i], u_eq[i] = newton_method(equilibria[i][:,None])
+    
+
+
+    
+    # Initialize references
+    TT = pm.TT
+    x_reference = np.zeros((x_size, TT))
+    u_reference = np.zeros((u_size, TT))
+    for t in range (TT):
+        x_reference[:, t] = x_eq[0, :]
+        u_reference[0, t] = u_eq[0, :]
+
+    # Elaborate the reference to match the equilibria transition
+    center = pm.transition_center
+    for k in range(1, len(center)):
+        t1 = int(center[k] - transition_width/ 2)
+        t2 = int(center[k] + transition_width/ 2)
+      
+        for i in range(x_size):
+            if transition_width != 0:
+                spline = CubicSpline([t1, t2], np.vstack([x_eq[k-1, :], x_eq[k, :]]), bc_type='clamped')
+            for t in range(t1, t2):
+                x_reference[:, t] = spline(t)
+            for t in range(t2, TT):
+                x_reference[:, t] = x_reference[:, t-1]
+        
+        # if transition_width != 0:
+        #     spline = CubicSpline([t1, t2], np.vstack([u_eq[k-1, :], u_eq[k, :]]), bc_type='clamped')
+        # for t in range(t1, t2):
+        #     u_reference[:, t] = spline(t)
+        # for t in range(t2, TT):
+        #     u_reference[:, t] = u_reference[:, t-1]
+    
+      
+
+    dtheta1, dtheta2 = calculate_dtheta1_dtheta2(x_reference)
+
+    for t in range(TT-1):
+        # G = dyn.compute_gravity(x_reference[2, t], x_reference[3, t])
+        # u_reference[0,t] = G[0]
+        tau = dyn.inverse_dynamics(x_reference[:, t], x_reference[:,t+1])
+        u_reference[0, t] = tau[0]
+    u_reference[0, -1] = tau[0]
+
+
+    
+    x_reference[0,:] = dtheta1
+    x_reference[1,:] = dtheta2
+    
+    return x_reference, u_reference
