@@ -1,5 +1,5 @@
 import numpy as np
-from parameters import Qt_reg as Qt,  Rt_reg as Rt,  QT_reg as QT
+from parameters import Qt_task2 as Qt, Rt_task2 as Rt, QT_task2 as QT
 
 
 def J_Function(x_trajectory, u_trajectory, x_reference, u_reference, type):
@@ -78,7 +78,7 @@ def stage_cost(x_stage, x_reference, u_stage, u_reference, type, t):
 
             # Define the block matrix mad of Q, S and R
             augmented_state_matrix = np.block([
-                [Qt_tilde, St_tilde.T]
+                [Qt_tilde, St_tilde.T],
                 [St_tilde, Rt]
             ])
 

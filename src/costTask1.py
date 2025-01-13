@@ -1,5 +1,5 @@
 import numpy as np
-from parameters import Qt, Rt, QT
+from parameters import Qt_task1 as Qt, Rt_task1 as Rt, QT_task1 as QT
 
 
 def J_Function(x_trajectory, u_trajectory, x_reference, u_reference, type):

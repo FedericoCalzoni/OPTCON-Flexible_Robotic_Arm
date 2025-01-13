@@ -333,7 +333,7 @@ def newton_for_optcon(x_reference, u_reference, Q_tuned, R_tuned):
         # Compute the proper stepsize
         #if k == 5:
             #breakpoint()
-        gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
+        gamma = armijo.armijo(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
 
         # gamma = 0.1
 

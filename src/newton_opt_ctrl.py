@@ -1,6 +1,5 @@
 import numpy as np
 import dynamics as dyn
-import cost
 import parameters as pm
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -10,7 +9,13 @@ from visualizer import animate_double_pendulum as anim
 import data_manager as dm
 from LQR import LQR_system_regulator as LQR
 
-def newton_for_optcon(x_reference, u_reference):
+def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1):
+    
+    if task == 1:
+        import costTask1 as cost
+    elif task == 2:
+        import costTask2 as cost
+
     print('\n\n\
     \t\t--------------------------------------------\n \
     \t\tLaunching: Newton Method for Optimal Control\n \
@@ -46,21 +51,15 @@ def newton_for_optcon(x_reference, u_reference):
 
     newton_finished = False
 
-    # Initialize the first instance of the optimal trajectory
-    # for t in range(TT):
-    #     x_optimal[:,t, 0] = x_initial_guess
-    #     u_optimal[:,t, 0] = u_initial_guess
-
-    
-    # if pm.initial_guess_given:
-    #     x_optimal[:,:, 0], u_optimal[:,:, 0] = dm.load_optimal_trajectory('29')
-    if  True:
+    if  guess == "first equilibria":
+        for t in range(TT):
+            x_optimal[:,t, 0] = x_reference[:,0]
+            u_optimal[:,t, 0] = u_reference[:,0]
+    elif guess == "reference":
         x_optimal[:,:, 0] = x_reference
         u_optimal[:,:, 0] = Initial_LQR(x_reference, u_reference)
     else:
-        for t in range(TT):
-            x_optimal[:,t, 0] = x_reference[:,t]
-            u_optimal[:,t, 0] = u_reference[:,t]
+        raise ValueError("Invalid guess parameter: must be 'first equilibria' or 'reference'")
 
     # Apply newton method to compute the optimal trajectory
     GradJ_u_history = []  # Store GradJ_u history
@@ -71,25 +70,38 @@ def newton_for_optcon(x_reference, u_reference):
         
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
 
-        if k <= 1:
-            print(f"\nIteration: {k} \tCost: {l[k]}")
-        else:
-            # Check if the terminal condition is satisfied
-            relative_cost_reduction = np.abs(l[k] - l[k-1])/l[k-1]
-            print(f"\nIteration: {k} \tCost: {l[k]} \tCost reduction: {l[k] - l[k-1]} \tRelative cost reduction: {relative_cost_reduction}")
-            if relative_cost_reduction < 1e-10 or relative_cost_reduction > 1:
-                break
+        # A more precise stopping criteria:
+        # When the relative cost reduction is below a threshold, the algorithm stops.
+        # It means that the improvement was negligible.
+        
+        # if k <= 1:
+        #     print(f"\nIteration: {k} \tCost: {l[k]}")
+        # else:
+        #     # Check if the terminal condition is satisfied
+        #     relative_cost_reduction = np.abs(l[k] - l[k-1])/l[k-1]
+        #     print(f"\nIteration: {k} \tCost: {l[k]} \tCost reduction: {l[k] - l[k-1]} \tRelative cost reduction: {relative_cost_reduction}")
+        #     if relative_cost_reduction < 1e-10 or relative_cost_reduction > 1:
+        #         break
         
         # # Gradient norm stopping criteria
-        # if k == 0:
+        # if k <= 1:
         #     print(f"\nIteration: {k} \tCost: {l[k]}")
         # else: 
         #     norm_GradJ_u = np.linalg.norm(GradJ_u)
-        #     print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tGradient Norm: {norm_GradJ_u}")
-            
-        #     # Modified stopping criterion based on gradient norm
-        #     if norm_GradJ_u < 1e-10:
+        #     print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tGradient Norm: {norm_GradJ_u}")            
+        #     if norm_GradJ_u < 1e-8:
         #         break
+        
+        # Gradient norm stopping criteria
+        if k <= 1:
+            print(f"\nIteration: {k} \tCost: {l[k]}")
+        else: 
+            norm_delta_u =  np.linalg.norm(delta_u[:,:,k-1])
+            print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tDelta_u Norm: {norm_delta_u}")
+            if norm_delta_u < 1e-10:
+                break
+        
+        
         
         # Initialization of x0 for the next iteration
         x_optimal[:,0, k+1] = x_reference[:, 0]
@@ -110,6 +122,7 @@ def newton_for_optcon(x_reference, u_reference):
             Lambda[:,t] = A[:,:,t].T @ Lambda[:,t+1] + qt[:,t]
             GradJ_u[:,t] = B[:,:,t].T @ Lambda[:,t+1] + rt[:,t]
         
+        GradJ_u_history.append(GradJ_u.copy())
 
         ########## Compute the descent direction [S8C9]
         # Adopt Regularization methods
@@ -129,17 +142,17 @@ def newton_for_optcon(x_reference, u_reference):
         # Plot Affine_LQR outputs
         second_plot_set(k, sigma_star, delta_u, K_Star)
         
-        # Compute the proper stepsize
-        #if k == 5:
-            #breakpoint()
-        if k == 0:
+        delta_u_history.append(delta_u[:,:,k].copy())
+        
+        # Compute step size
+        if k == 0 and guess == "reference":
             gamma = 0.01
         else:
-            gamma = armijo.armijo_v2(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, step_size_0=1)
+            gamma = armijo.armijo(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, task, step_size_0=1)
 
-        # gamma = 0.1
-
-        for t in range(TT-1): 
+        
+        
+        for t in range(TT-1):
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_Star[:,:,t, k] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t, k]
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
@@ -147,7 +160,7 @@ def newton_for_optcon(x_reference, u_reference):
     newton_finished = True
     first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
     plot_optimal_intermediate_trajectory(x_reference, u_reference, x_optimal, u_optimal, k)
-    return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u_history, delta_u_history
+    return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u_history, delta_u_history, l[:k+1]
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
     x_size = x_reference.shape[0]
@@ -209,10 +222,8 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
     return K, Sigma, delta_u
 
 def Initial_LQR(x_ref, u_ref):
-    print('\n\n\
-        \t------------------------------------------\n \
-        \t\tLaunching: LQR Tracker\n \
-        \t------------------------------------------')
+    
+    import costTask3 as cost
     
     x_size = x_ref.shape[0]
     u_size = u_ref.shape[0]
@@ -220,7 +231,6 @@ def Initial_LQR(x_ref, u_ref):
 
     x_regulator = np.zeros((x_size, TT))
     u_regulator = np.zeros((u_size, TT))
-    x_natural_evolution = np.zeros((x_size, TT))
     x_evolution_after_LQR = np.zeros((x_size, TT))
 
     x_regulator[:, 0]         = x_ref[:,0]
@@ -333,6 +343,7 @@ def second_plot_set(k, sigma_star, delta_u, K_Star):
             plt.legend()
             plt.show()
             
+
 
 def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
     
@@ -460,8 +471,12 @@ def plot_norm_grad_J(grad_J_history):
     Parameters:
     grad_J_history (list or np.ndarray): List of grad_J vectors for each iteration.
     """
-    norms = [np.linalg.norm(grad_J) for grad_J in grad_J_history]
-    iterations = np.arange(len(grad_J_history))
+    valid_indices = [i for i, grad_J in enumerate(grad_J_history) if np.linalg.norm(grad_J) != 0]
+    valid_grad_J_history = [grad_J_history[i] for i in valid_indices]
+
+    # Compute norms of valid gradients
+    norms = [np.linalg.norm(grad_J) for grad_J in valid_grad_J_history]
+    iterations = np.array(valid_indices)
 
     plt.figure(figsize=(7, 4))
     # Points and line in mediumblue
@@ -472,14 +487,14 @@ def plot_norm_grad_J(grad_J_history):
     # Customize grid
     plt.grid(True, which="both", ls=":", alpha=0.2)
     plt.grid(True, which="major", ls="-", alpha=0.4)
-    
+
     plt.xlabel('Iteration $k$', fontsize=12)
     plt.ylabel(r'$\|\nabla J(u^k)\|$', fontsize=12)
-    
+
     # Improve legend with only line
     plt.legend(loc='upper right', fontsize=11, framealpha=1.0,
               edgecolor='black', fancybox=False)
-    
+
     plt.tight_layout()
     plt.show()
 
@@ -513,3 +528,15 @@ def plot_cost_evolution(cost_history):
     
     plt.tight_layout()
     plt.show()
+    
+# def plot_error_evolution(x_gen, u_gen, x_reference, u_reference):
+#     delta_x = np.zeros((4,pm.TT))
+#     for i in range(x_reference.shape[0]):
+#         delta_x[i, :] =  x_gen[i, :] - x_reference[i, :] 
+#         plt.plot(delta_x[i, :], label = f'delta x{i}')
+#     delta_u = u_gen - u_reference
+#     plt.plot(delta_u[0, :], label = 'delta u')
+#     plt.title('Error Evolution')
+#     plt.legend()
+#     plt.grid()
+#     plt.show()

@@ -1,6 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Dynamics parameters
+M1 = 2
+M2 = 2
+L1 = 1.5
+L2 = 1.5
+R1 = 0.75
+R2 = 0.75
+I1 = 1.5
+I2 = 1.5
+G = 9.81
+F1 = 0.1
+F2 = 0.1
+
+t_i = 0
+t_f = 36
+dt = 1e-3
+TT = int((t_f - t_i)/dt)
+
+optimal_trajectory_given = True
+LQR_trajectory_given = False 
+MPC_trajectory_given = False 
+
+# Armijo parameters
+c = 0.5
+beta = 0.7
+arm_max_iter = 100
+Arm_plot = False
+Arm_plot_every_k_iter = 2
 
 def smooth_transition(start_value, end_value, start_ind, end_ind):
     """
@@ -40,6 +68,7 @@ def smooth_transition(start_value, end_value, start_ind, end_ind):
     for t in range(delta_ind):
         evolution[t] = a1 + a2*t/t_sim + a3*(t/t_sim)**2 + a4*(t/t_sim)**3
     return  evolution.flatten()
+
 
 def cost_matrices_computation(Qt_temp, Rt_temp, TT, num_divisions, transition_width):
     """
@@ -85,36 +114,93 @@ def cost_matrices_computation(Qt_temp, Rt_temp, TT, num_divisions, transition_wi
         Rt_final[0,0, transition_end:TT] = Rt_temp[0,0,0]  
     return Qt_final, Rt_final
 
-# Dynamics parameters
-M1 = 2
-M2 = 2
-L1 = 1.5
-L2 = 1.5
-R1 = 0.75
-R2 = 0.75
-I1 = 1.5
-I2 = 1.5
-G = 9.81
-F1 = 0.1
-F2 = 0.1
 
-t_i = 0
-t_f = 36
-dt = 1e-3
-TT = int((t_f - t_i)/dt)
+def spline_transition(t, start, end):
+    """
+    Compute a smooth transition weight between 0 and 1 using a sigmoid function.
 
-optimal_trajectory_given = False
-initial_guess_given = False
-LQR_trajectory_given = False 
-MPC_trajectory_given = True  
+    Parameters:
+        t (float): The time index.
+        start (float): The start of the transition (t where weight ~ 0).
+        end (float): The end of the transition (t where weight ~ 1).
+
+    Returns:
+        float: Transition weight between 0 and 1.
+    """
+    width = end - start
+    return 1 / (1 + np.exp(-10 * (t - (start + width / 2)) / width))
+
+
+def cost_matrices_computation_step(Qt_temp, Rt_temp, transition_width, TT):
+    # Output matrices
+    Qt_final = np.zeros((4, 4, TT))
+    Rt_final = np.zeros((1, 1, TT))
+    # Time intervals
+    phase1_end = int(TT / 3 - transition_width / 2)
+    phase2_end = int(TT / 3 + transition_width / 2)
+    phase3_end = int(2 * TT / 3 - transition_width / 2)
+    phase4_end = int(2 * TT / 3 + transition_width / 2)
+    for t in range(TT):
+        if t < phase1_end:
+            # Phase 1: Constant values
+            Qt_final[:, :, t] = Qt_temp[:, :, 0]
+            Rt_final[:, :, t] = Rt_temp[:, :, 0]
+        elif phase1_end <= t < phase2_end:
+            # Phase 2: Transition from [0] to [1]
+            weight = spline_transition(t, phase1_end, phase2_end)
+            Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 0] + weight * Qt_temp[:, :, 1]
+            Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 0] + weight * Rt_temp[:, :, 1]
+        elif phase2_end <= t < phase3_end:
+            # Phase 3: Constant values
+            Qt_final[:, :, t] = Qt_temp[:, :, 1]
+            Rt_final[:, :, t] = Rt_temp[:, :, 1]
+        elif phase3_end <= t < phase4_end:
+            # Phase 4: Transition from Qt_temp[1] to Qt_temp[2]
+            weight = spline_transition(t, phase3_end, phase4_end)
+            Qt_final[:, :, t] = (1 - weight) * Qt_temp[:, :, 1] + weight * Qt_temp[:, :, 2]
+            Rt_final[:, :, t] = (1 - weight) * Rt_temp[:, :, 1] + weight * Rt_temp[:, :, 2]
+        else:
+            # Phase 5: Constant values
+            Qt_final[:, :, t] = Qt_temp[:, :, 2]
+            Rt_final[:, :, t] = Rt_temp[:, :, 2]
+    return Qt_final, Rt_final
 
 ######################################
-##      Task 1 and 2 parameters     ##
+##      Task 1 parameters           ##
+######################################
+
+TT_task1 = int(10/dt)
+transition_width = TT_task1/8
+
+#Cost Function Parameters
+Qt_temp = np.zeros((4, 4, 3))
+Rt_temp = np.zeros((1, 1, 3))
+
+a = 1e-4
+Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * a
+Rt_temp[:, :, 0] = np.diag([1]) * 1e-6 * a
+Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1]) * 0 *  a
+Rt_temp[:, :, 1] = np.diag([3]) * 1e-5 * a
+Qt_temp[:, :, 2] = np.diag([1, 1, 1, 1]) * a
+Rt_temp[:, :, 2] = np.diag([1]) * 1e-6 * a
+
+# Assign final results
+Qt_task1, Rt_task1 = cost_matrices_computation_step(Qt_temp, Rt_temp, transition_width, TT_task1)
+QT_task1 = Qt_task1[:, :, -1]
+
+# from matplotlib import pyplot as plt
+# for i in range(4):
+#     plt.plot(Qt_task1[i, i, :])
+# plt.plot(Rt_task1[0, 0, :])
+# plt.show()
+
+######################################
+##      Task 2 parameters           ##
 ######################################
 
 smooth_percentage = 0.5
 divisions = 4
-transition_width = int(TT/6)
+transition_width_task2 = int(TT/6)
 num_stable_states = divisions + 1
 transition_center = [0]
 for i in range(1,  num_stable_states):
@@ -122,53 +208,17 @@ for i in range(1,  num_stable_states):
 
 
 #Cost Function Parameters
-# Initialize matrices
 Qt_temp = np.zeros((4, 4, 2))
 Rt_temp = np.zeros((1, 1, 2))
-
-# Phase values
-# Assign values
-
-# DA INCORNICIARE REFERENCE=111, OUTPUT117
-# Qt_temp[:, :, 0] = np.diag([9.99854091, 999.331936, 4909.934141, 10.0133061]) *1e7  # Constant phase
-# Rt_temp[:, :, 0] = np.diag([270.5502102])                                 # Constant phase
-# Qt_temp[:, :, 1] = np.diag([0, 0.620181367, 0, 6.79470332])                   # Transition phase
-# Rt_temp[:, :, 1] = np.diag([296.05527468])
-
-# # DA TATUARE
-# Qt_temp[:, :, 0] = np.diag([1.00001241, 99.9331399, 490.9935389, 1.00096131]) *1e8  # Constant phase
-# Rt_temp[:, :, 0] = np.diag([265.5499998])                                 # Constant phase
-# Qt_temp[:, :, 1] = np.diag([1.02688787, 0.00000001, 3.33155371, 4.92487656]) * 0                  # Transition phase
-# Rt_temp[:, :, 1] = np.diag([299.40677386])
-
-# TI Voglio Beneh
-# Qt_temp[:, :, 0] = np.diag([10, 10,  8, 8]) *1e6  # Constant phase
-# Rt_temp[:, :, 0] = np.diag([1])*1e3                            # Constant phase
-# Qt_temp[:, :, 1] = np.diag([0.1,0.1,1,1])*1e0                  # Transition phase
-# Rt_temp[:, :, 1] = np.diag([1])*1e3
 
 Qt_temp[:, :, 0] = np.diag([10, 10,  8, 8]) *1e6  # Constant phase
 Rt_temp[:, :, 0] = np.diag([1])*1e3                            # Constant phase
 Qt_temp[:, :, 1] = np.diag([0.1,0.1,1,1])*1e0                  # Transition phase
 Rt_temp[:, :, 1] = np.diag([1])*1e3
 
-
 # Assign final results
-Qt, Rt = cost_matrices_computation(Qt_temp, Rt_temp, TT, divisions, transition_width)
-QT = Qt[:, :, -1]
-
-# from matplotlib import pyplot as plt
-# for i in range(4):
-#     plt.plot(Qt[i, i, :])
-# plt.plot(Rt[0, 0, :])
-# plt.show()
-
-# Armijo parameters
-c = 0.5
-beta = 0.7
-arm_max_iter = 100
-Arm_plot = False
-Arm_plot_every_k_iter = 2
+Qt_task2, Rt_task2 = cost_matrices_computation(Qt_temp, Rt_temp, TT, divisions, transition_width_task2)
+QT_task2 = Qt_task2[:, :, -1]
 
 Newton_Optcon_Plots = False
 Newton_Plot_every_k_iterations = 5
@@ -178,8 +228,8 @@ plot_states_at_last_iteration = False
 ##      Task 3 Parameters     ##
 ################################  
 
-state_perturbation_percentage = 0.00
-affine_perturbation = 0.0
+state_perturbation_percentage = 0.02
+affine_perturbation = 0.05
 
 # Cost Function Parameters
 Qt_temp_reg = np.zeros((4, 4, 2))
@@ -190,12 +240,17 @@ Rt_temp_reg = np.zeros((1, 1, 2))
 # Qt_temp_reg[:, :, 1] = np.diag([0, 0.620181367, 0, 6.79470332])                   # Transition phase
 # Rt_temp_reg[:, :, 1] = np.diag([296.05527468])
 
-Qt_temp_reg[:, :, 0] = np.diag([10, 10,  10, 10]) *1e2               # Constant phase
-Rt_temp_reg[:, :, 0] = np.diag([10])*1e2                            # Constant phase
-Qt_temp_reg[:, :, 1] = np.diag([10,10,10,10])*1e2                  # Transition phase
-Rt_temp_reg[:, :, 1] = np.diag([10])*1e2
+Qt_temp_reg[:, :, 0] = np.diag([10, 10,  10, 10]) *1e6  /1000             # Constant phase
+Rt_temp_reg[:, :, 0] = np.diag([10])*1e3                /1000            # Constant phase
+Qt_temp_reg[:, :, 1] = np.diag([10,10,10,10])*1e2       /1000           # Transition phase
+Rt_temp_reg[:, :, 1] = np.diag([10])*1e2                /1000
 
-Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, TT, divisions, transition_width)
+# Qt_temp[:, :, 0] = np.diag([10, 10,  8, 8]) * 1e4  # Constant phase
+# Rt_temp[:, :, 0] = np.diag([1]) * 1e3                            # Constant phase
+# Qt_temp[:, :, 1] = np.diag([0.1,0.1,1,1]) * 1e2                  # Transition phase
+# Rt_temp[:, :, 1] = np.diag([1]) * 1e3
+
+Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, TT, divisions, transition_width_task2)
 QT_reg = Qt_reg[:, :, -1]
 
 ################################
@@ -230,20 +285,6 @@ Rt_temp_MPC = np.zeros((1, 1, 3))
 # Qt_temp_MPC[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
 # Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
 
-# Loop
-# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 10000, 10000])
-# Rt_temp_MPC[:, :, 0] = np.diag([1]) * 0
-# Qt_temp_MPC[:, :, 1] = np.diag([0, 0, 1, 1])*1e2
-# Rt_temp_MPC[:, :, 1] = np.diag([1]) * 0
-# Qt_temp_MPC[:, :, 2] = np.diag([1, 1, 10000, 10000])
-# Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
-
-# # No noise
-# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 4000, 4000])  * (1/1.653676929332829) # Constant phase
-# Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
-# Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
-# Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
-
 # # with noise (-0.2, 0.05, 0.05)
 Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
 Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
@@ -257,5 +298,5 @@ Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
 # Rt_temp_MPC[:, :, 1] = np.diag([100]) * (1/44.78666325774839)
 
 # Assign final results
-Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, TT, divisions, transition_width)
+Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, TT, divisions, transition_width_task2)
 QT_MPC = Qt_MPC[:, :, -1]

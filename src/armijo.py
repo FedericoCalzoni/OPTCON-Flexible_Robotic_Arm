@@ -1,11 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from parameters import beta, c, Arm_plot, Arm_plot_every_k_iter, arm_max_iter
-import cost
 import dynamics as dyn
 
-def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, step_size_0=0.1):
+def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, task=1, step_size_0=0.1):
 
+    if task == 1:
+        import costTask1 as cost    
+    elif task == 2:
+        import costTask2 as cost
+    
     x_size = x_reference.shape[0]
     horizon = x_reference.shape[1]
 
@@ -47,6 +51,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         u_update[:,:] = u_trajectory
         for t in range(horizon-1):
             u_update[:,t] = u_trajectory[:,t] + Kt[:,:,t] @ (x_update[:,t] - x_trajectory[:,t]) + sigma_t[:,t] * step_size
+            u_update[:,t] = np.clip(u_update[:,t], -500, 500)
             x_update[:,t+1] = dyn.dynamics(x_update[:,t].reshape(-1, 1), u_update[:,t].reshape(-1, 1))
 
         J_temp = cost.J_Function(x_update, u_update, x_reference, u_reference, "LQR")
@@ -64,10 +69,7 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
 
         else:
             print(f'Selected Armijo step_size = {step_size}')
-            break
-
-        #print(f'Step size at iter {k+1} = {step_size}')
-    
+            break    
 
     if Arm_plot == True and iteration%Arm_plot_every_k_iter == 0 and iteration!=0:
         # Armijo Plot
@@ -86,8 +88,6 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
                 
             J_plot[j] = cost.J_Function(x_temp_sec[:,:,j], u_temp_sec[:,:,j], x_reference, u_reference, "LQR")
 
-
-
         plt.plot(gamma, J+c*gamma*descent, color='red', label='Armijo Condition')
         plt.plot(gamma, J+gamma*descent, color='black', label='Tangent Line')
         plt.plot(gamma, J_plot, color='green', label='Cost Evolution')
@@ -95,6 +95,5 @@ def armijo_v2(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gra
         plt.grid()
         plt.legend()
         plt.show()
-
 
     return step_size

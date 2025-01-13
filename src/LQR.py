@@ -79,7 +79,7 @@ def LQR_system_regulator(x_gen, u_gen):
     for i in range(x_size):
         plt.plot(delta_x[i, :], color = 'red', label = r'$\Delta$' f'x[{i}]')
     plt.plot(delta_u[0,:], color = 'blue', label = r'$\Delta$' 'u')
-    plt.title("Residuals evolution")
+    plt.title("LQR Residuals evolution")
     plt.legend()
     plt.grid()
     plt.show()
@@ -120,6 +120,15 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
         P[:,:,t] = Pt 
     return K
 
+def plot_LQR_error(x_LQR, x_gen):
+    plt.figure()
+    for i in range(4):
+        plt.plot(x_LQR[i, :], color = 'red', label = f'x_LQR[{0}]' )
+        plt.plot(x_gen[i, :], color = 'blue', label = f'x_gen[{0}]' )
+    plt.title('Optimal Trajectory VS LQR Trajectory')
+    plt.grid()
+    plt.legend()
+    plt.show(block = True)
 
 
 

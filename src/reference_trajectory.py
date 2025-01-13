@@ -75,7 +75,7 @@ def plot_trajectory(x_reference, u_reference, t_f=pm.t_f, dt=pm.dt):
     plt.tight_layout()
     plt.show()
 
-def generate_smooth_trajectory(transition_width = pm.transition_width):
+def generate_smooth_trajectory(transition_width = pm.transition_width_task2):
     def calculate_dtheta1_dtheta2(x_reference):
       dtheta1 = np.diff(x_reference[2, :])/pm.dt
       dtheta2 = np.diff(x_reference[3, :])/pm.dt
@@ -102,8 +102,6 @@ def generate_smooth_trajectory(transition_width = pm.transition_width):
             equilibria[i] = np.array([eq, -np.pi-eq, K_eq * np.sin(eq)])
             x_eq[i], u_eq[i] = newton_method(equilibria[i][:,None])
     
-
-
     
     # Initialize references
     TT = pm.TT
