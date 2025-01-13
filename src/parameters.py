@@ -250,8 +250,20 @@ plot_states_at_last_iteration = False
 ##      Task 3 Parameters     ##
 ################################  
 
+
+# Case 1:
 state_perturbation_percentage = 0.02
 affine_perturbation = 0.05
+
+# case 2:
+# state_perturbation_percentage = 0.05
+# affine_perturbation = 0.05
+
+# case 3: 
+# state_perturbation_percentage = -0.1
+# affine_perturbation = 0.05
+
+
 
 # Cost Function Parameters
 Qt_temp_reg = np.zeros((4, 4, 2))
@@ -279,10 +291,22 @@ QT_reg = Qt_reg[:, :, -1]
 ##      Task 4 Parameters     ##
 ################################  
 
-state_initial_perturbation = -0.2
+# case 1:
+state_initial_perturbation = 0.05
 affine_perturbation_mpc = 0.05
-noise_sensor = 0.05
-noise_actuator = 0.05
+noise_sensor = 0
+noise_actuator = 0
+
+# case 2: 
+# state_initial_perturbation = -0.1
+# affine_perturbation_mpc = 0.05
+
+# Case 3:
+# state_initial_perturbation = -0.2
+# affine_perturbation_mpc = 0.05
+
+noise_sensor = 0
+noise_actuator = 0
 
 # MPC parameters
 T_pred = 10
@@ -314,10 +338,10 @@ Rt_temp_MPC = np.zeros((1, 1, 3))
 # Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
 # Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
 
-Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 7000, 5000])  * (1/1.653676929332829) # Constant phase
-Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
+Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
+Rt_temp_MPC[:, :, 0] = np.diag([0.005]) * (1/44.78666325774839)                                 # Constant phase
 Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
-Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
+Rt_temp_MPC[:, :, 1] = np.diag([0.005]) * (1/44.78666325774839)
 
 # # with extreme noise
 # Qt_temp_MPC[:, :, 0] = np.diag([100000, 100000, 2000000000, 5000000])  * (1/1.653676929332829) # Constant phase

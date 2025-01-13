@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import data_manager as dm
 from mpc import compute_mpc
 import mpc
-from LQR import LQR_system_regulator as LQR
-from LQR import plot_LQR_error
+import LQR
 
 def main():
     print("\n\n\
@@ -83,10 +82,12 @@ def main():
         else:
             if x_gen.shape[1] != pm.TT:
                 raise ValueError("The optimal trajectory is not of the right length.")
-            x_LQR, u_LQR = LQR(x_gen, u_gen)
+            x_LQR, delta_u = LQR.LQR_system_regulator(x_gen, u_gen)
+            u_LQR = u_gen + delta_u
             dm.save_lqr_trajectory(x_LQR, u_LQR)
-            plot_LQR_error(x_LQR, x_gen)
-            
+
+        LQR.plot_trajectories(x_LQR, u_LQR, x_gen, u_gen)
+        LQR.plot_tracking_errors(x_LQR, x_gen, delta_u)
         anim(x_LQR.T, title='LQR Trajectory', speed=int(pm.t_f/10))
 
     #####################################

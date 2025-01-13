@@ -55,7 +55,6 @@ def LQR_system_regulator(x_gen, u_gen):
     A = np.zeros((x_size,x_size,TT-1))
     B = np.zeros((x_size,u_size,TT-1))
 
-    # Calcolo le jacobiane di dinamica e costo
     for t in range(TT-1):
         A[:,:,t] = dyn.jacobian_x_new_wrt_x(x_gen[:,t], u_gen[:,t])
         B[:,:,t] = dyn.jacobian_x_new_wrt_u(x_gen[:,t])
@@ -94,7 +93,7 @@ def LQR_system_regulator(x_gen, u_gen):
     plt.grid()
     plt.show()
 
-    return x_evolution_after_LQR, u_regulator
+    return x_evolution_after_LQR, delta_u
 
 
 def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
@@ -142,23 +141,113 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
         K[:,:,t] = Kt
         P[:,:,t] = Pt 
     return K
-
-def plot_LQR_error(x_LQR, x_gen):
+    
+    
+def plot_trajectories(x_real_LQR, u_real_LQR, x_gen, u_gen):
     """
-    Plots the error between LQR and generated state trajectories.
-
+    Plot the system trajectories comparing real and desired states/inputs.
+    Each variable is plotted in a separate subplot with its reference.
+    
     Args:
-        x_LQR (np.ndarray): LQR state trajectory.
-        x_gen (np.ndarray): Generated state trajectory.
+        x_real_mpc: Real state trajectory (4xT array)
+        u_real_mpc: Real input trajectory (1xT array)
+        x_gen: Desired optimal state trajectory (4xT array)
+        u_gen: Desired optimal input trajectory (1xT array)
     """
-    plt.figure()
+    # Define naming and color schemes
+    names = {
+        0: r'$\dot \theta_1$', 1: r'$\dot \theta_2$', 
+        2: r'$\theta_1$', 3: r'$\theta_2$', 4: r'$\tau_1$'
+    }
+    colors_ref = {0: 'm', 1: 'orange', 2: 'b', 3: 'g', 4: 'r'}
+    colors_gen = {0: 'darkmagenta', 1: 'chocolate', 2: 'navy', 3: 'limegreen', 4: 'darkred'}
+    
+    T = x_real_LQR.shape[1]
+    k = np.arange(T)
+    
+    # Create figure with subplots
+    fig, axs = plt.subplots(5, 1, figsize=(6, 10))
+    fig.suptitle('System Trajectories: Real vs Reference', fontsize=16)
+    
+    # Plot states
     for i in range(4):
-        plt.plot(x_LQR[i, :], color = 'red', label = f'x_LQR[{0}]' )
-        plt.plot(x_gen[i, :], color = 'blue', label = f'x_gen[{0}]' )
-    plt.title('Optimal Trajectory VS LQR Trajectory')
-    plt.grid()
-    plt.legend()
-    plt.show(block = True)
+        axs[i].plot(k, x_real_LQR[i,:], color=colors_ref[i], linestyle='-', linewidth=2, 
+                   label=f'{names[i]}')
+        axs[i].plot(k, x_gen[i,:], color=colors_gen[i], linestyle='--', linewidth=2,
+                   label=f'{names[i]}' + r'$^{des}$')
+        axs[i].set_ylabel('Angular Velocity (rad/s)' if i < 2 else 'Angle (rad)')
+        axs[i].legend()
+        axs[i].grid(True)
+    
+    # Plot input
+    axs[4].plot(k, u_real_LQR[0,:], color=colors_ref[4], linestyle='-', linewidth=2,
+                label=f'{names[4]}')
+    axs[4].plot(k, u_gen[0,:], color=colors_gen[4], linestyle='--', linewidth=2,
+                label=f'{names[4]}' + r'$^{des}$')
+    axs[4].set_ylabel(r'Torque (N$\cdot$m)')
+    axs[4].set_xlabel(r'Time $t$')
+    axs[4].legend()
+    axs[4].grid(True)
+    
+    # Adjust layout
+    plt.tight_layout()
+    plt.show()
+    
+    return
+
+
+def plot_tracking_errors(x_real_LQR, x_gen, delta_u):
+    """
+    Plot individual state tracking errors and control input over time.
+    
+    Args:
+        x_real_mpc: Real state trajectory (4xT array)
+        x_gen: Desired optimal state trajectory (4xT array)
+        u_real_mpc: Real control input trajectory (1xT array)
+        u_gen: Desired optimal control input trajectory (1xT array)
+    """
+    # Define naming and color schemes
+    names = {
+        0: r'$\dot \theta_1$', 1: r'$\dot \theta_2$', 
+        2: r'$\theta_1$', 3: r'$\theta_2$',
+        4: r'$\tau_1$'
+    }
+    colors = {0: 'm', 1: 'orange', 2: 'b', 3: 'g', 4: 'r'}
+    
+    T = x_real_LQR.shape[1]
+    time = np.arange(T)
+    
+    # Create figure with 5 subplots
+    fig, axs = plt.subplots(5, 1, figsize=(6, 10))
+    fig.suptitle('State Tracking Errors and Control Input', fontsize=16)
+    
+    # Plot individual state tracking errors
+    for i in range(4):
+        error = (x_real_LQR[i,:] - x_gen[i,:])
+        axs[i].plot(time, error, color=colors[i], linestyle='-', linewidth=2,
+                   label=f'{names[i]} - {names[i]}' + r'$^{ref}$')
+        
+        # Set appropriate labels
+        if i < 2:
+            axs[i].set_ylabel('Angular Velocity (rad/s)')
+        else:
+            axs[i].set_ylabel('Angle (rad)')
+        axs[i].legend()
+        axs[i].grid(True)
+    
+    # Plot control input
+    error = delta_u[0,:]
+    axs[4].plot(time,error, color=colors[4], linestyle='-', linewidth=2,
+                label=f'{names[4]}')
+    axs[4].set_ylabel(r'Torque (N$\cdot$m)')
+    axs[4].set_xlabel(r'Time $t$')
+    axs[4].legend()
+    axs[4].grid(True)
+    
+    # Adjust layout
+    plt.tight_layout()
+    plt.show()
+    return
 
 
 

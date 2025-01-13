@@ -196,18 +196,18 @@ def plot_trajectories(x_real_mpc, u_real_mpc, x_gen, u_gen):
     
     # Plot states
     for i in range(4):
-        axs[i].plot(k, x_real_mpc[i,:], color=colors_ref[i], linestyle='-', 
+        axs[i].plot(k, x_real_mpc[i,:], color=colors_ref[i], linestyle='-', linewidth=2,
                    label=f'{names[i]}')
-        axs[i].plot(k, x_gen[i,:], color=colors_gen[i], linestyle='--', 
+        axs[i].plot(k, x_gen[i,:], color=colors_gen[i], linestyle='--', linewidth=2,
                    label=f'{names[i]}' + r'$^{des}$')
         axs[i].set_ylabel('Angular Velocity (rad/s)' if i < 2 else 'Angle (rad)')
         axs[i].legend()
         axs[i].grid(True)
     
     # Plot input
-    axs[4].plot(k, u_real_mpc[0,:], color=colors_ref[4], linestyle='-', 
+    axs[4].plot(k, u_real_mpc[0,:], color=colors_ref[4], linestyle='-', linewidth=2,
                 label=f'{names[4]}')
-    axs[4].plot(k, u_gen[0,:], color=colors_gen[4], linestyle='--', 
+    axs[4].plot(k, u_gen[0,:], color=colors_gen[4], linestyle='--', linewidth=2,
                 label=f'{names[4]}' + r'$^{des}$')
     axs[4].set_ylabel(r'Torque (N$\cdot$m)')
     axs[4].set_xlabel(r'Time $t$')
