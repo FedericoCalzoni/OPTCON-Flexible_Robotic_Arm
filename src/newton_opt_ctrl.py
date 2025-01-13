@@ -2,14 +2,11 @@ import numpy as np
 import dynamics as dyn
 import parameters as pm
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from numpy.linalg import inv
 import armijo as armijo
 from visualizer import animate_double_pendulum as anim
-import data_manager as dm
-from LQR import LQR_system_regulator as LQR
 
-def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1):
+def newton_for_optcon(x_reference, u_reference, guess="step", task=1):
     
     if task == 1:
         import costTask1 as cost
@@ -49,13 +46,11 @@ def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1
     A = np.zeros((x_size,x_size,TT-1))
     B = np.zeros((x_size,u_size,TT-1))
 
-    newton_finished = False
-
-    if  guess == "first equilibria":
+    if  guess == "step":
         for t in range(TT):
             x_optimal[:,t, 0] = x_reference[:,0]
             u_optimal[:,t, 0] = u_reference[:,0]
-    elif guess == "reference":
+    elif guess == "smooth":
         x_optimal[:,:, 0] = x_reference
         u_optimal[:,:, 0] = Initial_LQR(x_reference, u_reference)
     else:
@@ -66,31 +61,7 @@ def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1
     delta_u_history = []  # Store delta_u history
     
     for k in range(max_iterations):
-        first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
-        
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
-
-        # A more precise stopping criteria:
-        # When the relative cost reduction is below a threshold, the algorithm stops.
-        # It means that the improvement was negligible.
-        
-        # if k <= 1:
-        #     print(f"\nIteration: {k} \tCost: {l[k]}")
-        # else:
-        #     # Check if the terminal condition is satisfied
-        #     relative_cost_reduction = np.abs(l[k] - l[k-1])/l[k-1]
-        #     print(f"\nIteration: {k} \tCost: {l[k]} \tCost reduction: {l[k] - l[k-1]} \tRelative cost reduction: {relative_cost_reduction}")
-        #     if relative_cost_reduction < 1e-10 or relative_cost_reduction > 1:
-        #         break
-        
-        # # Gradient norm stopping criteria
-        # if k <= 1:
-        #     print(f"\nIteration: {k} \tCost: {l[k]}")
-        # else: 
-        #     norm_GradJ_u = np.linalg.norm(GradJ_u)
-        #     print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tGradient Norm: {norm_GradJ_u}")            
-        #     if norm_GradJ_u < 1e-8:
-        #         break
         
         # Gradient norm stopping criteria
         if k <= 1:
@@ -98,11 +69,9 @@ def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1
         else: 
             norm_delta_u =  np.linalg.norm(delta_u[:,:,k-1])
             print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tDelta_u Norm: {norm_delta_u}")
-            if norm_delta_u < 1e-10:
+            if norm_delta_u < 1e-3:
                 break
-        
-        
-        
+    
         # Initialization of x0 for the next iteration
         x_optimal[:,0, k+1] = x_reference[:, 0]
         
@@ -132,33 +101,26 @@ def newton_for_optcon(x_reference, u_reference, guess="first equilibria", task=1
             St_Star[:,:,t] = cost.hessian_12_J(x_optimal[:,t,k], u_optimal[:,t,k])  
         QT_Star = cost.hessian_terminal_cost()
 
-
         ########## Compute the optimal control input [S18C9]
         # To compute the descent direction, the affine LQR must be solved
         K_Star[:,:,:,k], sigma_star[:,:,k], delta_u[:,:,k] =  \
             Affine_LQR_solver(x_optimal[:,:,k], x_reference, A, B, \
                               Qt_Star, Rt_Star, St_Star, QT_Star, qt, rt, qT)
-            
-        # Plot Affine_LQR outputs
-        second_plot_set(k, sigma_star, delta_u, K_Star)
         
         delta_u_history.append(delta_u[:,:,k].copy())
         
         # Compute step size
-        if k == 0 and guess == "reference":
-            gamma = 0.01
+        if k == 0: #and guess == "smooth":
+            gamma = 0.1
         else:
             gamma = armijo.armijo(x_optimal[:,:,k], x_reference, u_optimal[:,:,k], u_reference, delta_u[:,:,k], GradJ_u, l[k], K_Star[:,:,:,k], sigma_star[:,:,k], k, task, step_size_0=1)
 
-        
-        
         for t in range(TT-1):
             u_optimal[:,t, k+1] = u_optimal[:,t, k] + K_Star[:,:,t, k] @ (x_optimal[:,t, k+1] - x_optimal[:,t,k]) + gamma * sigma_star[:,t, k]
             x_optimal[:,t+1, k+1] = dyn.dynamics(x_optimal[:,t,k+1], u_optimal[:,t,k+1])
 
-    print(f'Ho finito alla {k}^ iterazione')
+    print(f'Algorithm Ended at {k}th iteration')
     newton_finished = True
-    first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished)
     plot_optimal_intermediate_trajectory(x_reference, u_reference, x_optimal, u_optimal, k)
     return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u_history, delta_u_history, l[:k+1]
 
@@ -301,50 +263,7 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
         K[:,:,t] = Kt
         P[:,:,t] = Pt 
     return K
-
-def first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished):
-    x_size = x_optimal.shape[0]
-    u_size = u_optimal.shape[0]
-    if (pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0) \
-        or (pm.plot_states_at_last_iteration and newton_finished):
-            plt.figure()
-            for i in range(x_size):
-                plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
-                plt.plot(x_reference[i,:], color = 'orange', label =f'x_reference[{i+1}]')
-            plt.grid()
-            plt.legend()
-            plt.title(f'State Evolution\n$Iteration = {k}$')
-            plt.show()
-
-            plt.figure()
-            for i in range(u_size):
-                plt.plot(u_optimal[i,:,k], color = 'purple', label =f'u_optimal[{i+1}]')
-                plt.plot(u_reference[i,:],color = 'yellow', label =f'u_reference[{i+1}]')
-            plt.grid()
-            plt.legend()
-            plt.title(f'Input Evolution\n$Iteration = {k}$')
-            plt.show()
-            anim(x_optimal[:,:,k].T)
-
-
-
-def second_plot_set(k, sigma_star, delta_u, K_Star):
-    if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
-            x_size = K_Star.shape[1]
-            u_size = K_Star.shape[0]
-            plt.figure()
-            plt.title(f'Affine LQR solution at\nIteration {k}')
-            for i in range(u_size):
-                plt.plot(sigma_star[i,:, k], color = 'red', label = f'Sigma[{i}]')
-                plt.plot(delta_u[i,:, k], color = 'purple', label = f'Delta_u[{i}]')
-                for j in range(x_size):
-                    plt.plot(K_Star[i, j, :, k], color = 'blue', label = f'K[{i} , {j}]')
-            plt.grid()
-            plt.legend()
-            plt.show()
             
-
-
 def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
     
     total_time_steps = x_reference.shape[1]
@@ -392,7 +311,8 @@ def plot_optimal_intermediate_trajectory(x_reference, u_reference, x_gen, u_gen,
     colors_ref = {0: 'm', 1: 'orange', 2: 'b', 3: 'g', 4: 'r'}
     colors_gen = {0: 'darkmagenta', 1: 'chocolate', 2: 'navy', 3: 'limegreen', 4: 'darkred'}
 
-    selected_iterations = [1, 3, 7, 11]
+    plotsteps = int((k_max - 2)/2)
+    selected_iterations = [1, plotsteps, 2*plotsteps, k_max]
 
     for i in range(4): 
         fig, axes = plt.subplots(len(selected_iterations), 1, figsize=(6, 10))
@@ -442,12 +362,12 @@ def plot_norm_delta_u(delta_u_history):
     """
     # Compute the Frobenius norm for each iteration's delta_u matrix
     norms = [np.linalg.norm(delta_u.flatten()) for delta_u in delta_u_history]
-    iterations = np.arange(len(delta_u_history))
+    iterations = np.arange(len(delta_u_history)-1)
 
     plt.figure(figsize=(7, 4))
     # Points and line in mediumblue
-    plt.semilogy(iterations, norms, '.', color='indigo', markersize=8)
-    plt.semilogy(iterations, norms, '-', color='indigo', linewidth=2, alpha=0.8,
+    plt.semilogy(iterations, norms[1:], '.', color='indigo', markersize=8)
+    plt.semilogy(iterations, norms[1:], '-', color='indigo', linewidth=2, alpha=0.8,
                  label=r'$\|\Delta u_k\|$')
 
     # Customize grid
@@ -505,13 +425,13 @@ def plot_cost_evolution(cost_history):
     Parameters:
     cost_history (list or np.ndarray): List of cost values for each iteration.
     """
-    iterations = np.arange(len(cost_history))
+    iterations = np.arange(len(cost_history)-1)
 
     plt.figure(figsize=(7, 4))
     
     # Points and line in indigo
-    plt.semilogy(iterations, cost_history, '.', color='indigo', markersize=8)
-    plt.semilogy(iterations, cost_history, '-', color='indigo', linewidth=2, alpha=0.8,
+    plt.semilogy(iterations, cost_history[1:], '.', color='indigo', markersize=8)
+    plt.semilogy(iterations, cost_history[1:], '-', color='indigo', linewidth=2, alpha=0.8,
                  label=r'$J(u^k)$')
 
     # Customize grid

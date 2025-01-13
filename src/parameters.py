@@ -19,7 +19,7 @@ t_f = 36
 dt = 1e-3
 TT = int((t_f - t_i)/dt)
 
-optimal_trajectory_given = True
+optimal_trajectory_given = False
 LQR_trajectory_given = False 
 MPC_trajectory_given = False 
 
@@ -27,8 +27,9 @@ MPC_trajectory_given = False
 c = 0.5
 beta = 0.7
 arm_max_iter = 100
-Arm_plot = False
-Arm_plot_every_k_iter = 2
+Arm_plot = True
+Arm_plot_up_to_iter_k = 3
+Arm_plot_from_iter_k_to_end = 12
 
 def smooth_transition(start_value, end_value, start_ind, end_ind):
     """
@@ -176,7 +177,7 @@ transition_width = TT_task1/8
 Qt_temp = np.zeros((4, 4, 3))
 Rt_temp = np.zeros((1, 1, 3))
 
-a = 1e-4
+a = 1e0
 Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * a
 Rt_temp[:, :, 0] = np.diag([1]) * 1e-6 * a
 Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1]) * 0 *  a

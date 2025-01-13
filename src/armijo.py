@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from parameters import beta, c, Arm_plot, Arm_plot_every_k_iter, arm_max_iter
+from parameters import beta, c, Arm_plot, Arm_plot_up_to_iter_k , Arm_plot_from_iter_k_to_end, arm_max_iter
 import dynamics as dyn
 
 def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, task=1, step_size_0=0.1):
@@ -14,7 +14,7 @@ def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ,
     horizon = x_reference.shape[1]
 
     # resolution for plotting the cost function
-    resolution = 25   
+    resolution = 20   
     
     ## Initialize the following variables:
     #  -    step_size: gamma that is considered at the i-th iteration
@@ -32,15 +32,6 @@ def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ,
 
     x_update = np.zeros((x_size,horizon))
     u_update = np.zeros((u_size,horizon))
-    
-    for i in range(arm_max_iter):
-        x_update[:,:] = x_trajectory
-        u_update[:,:] = u_trajectory
-
-    #descent = q_trajectory.ravel() @ delta_u.ravel()
-    #descent = np.zeros((horizon-1,1))
-    #for t in range(horizon-1):
-    #    descent[t] = gradJ[:,t] * delta_u[:,t]
 
     descent = 0
     for t in range(horizon-1):
@@ -71,7 +62,7 @@ def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ,
             print(f'Selected Armijo step_size = {step_size}')
             break    
 
-    if Arm_plot == True and iteration%Arm_plot_every_k_iter == 0 and iteration!=0:
+    if Arm_plot == True and ((iteration <= Arm_plot_up_to_iter_k)or(iteration >= Arm_plot_from_iter_k_to_end ))  and iteration!=0:
         # Armijo Plot
         x_temp_sec = np.zeros((x_size, horizon, resolution))
         u_temp_sec = np.zeros((u_size, horizon, resolution))

@@ -1,4 +1,3 @@
-import dynamics as dyn
 from visualizer import animate_double_pendulum as anim
 import numpy as np
 import parameters as pm
@@ -40,7 +39,7 @@ def main():
         print("Final state:\t", x_eqf.T, "\tFinal Input:\t", u_eqf.T)
         x_reference, u_reference = reference_trajectory.generate_trajectory(x_eq0, x_eqf, u_eq0, u_eqf, smooth_percentage=0, t_f=10)
         reference_trajectory.plot_trajectory(x_reference, u_reference, t_f=10)
-        x_gen, u_gen, GradJ_u_history, delta_u_history, l = newton_OC(x_reference, u_reference, guess="first equilibria", task=1)
+        x_gen, u_gen, GradJ_u_history, delta_u_history, l = newton_OC(x_reference, u_reference, guess="step", task=1)
         plot_norm_grad_J(GradJ_u_history)
         plot_norm_delta_u(delta_u_history)
         plot_cost_evolution(l)
@@ -57,7 +56,7 @@ def main():
         reference_trajectory.plot_trajectory(x_reference, u_reference)
         
         # Compute the optimal trajectory
-        x_gen, u_gen, GradJ_u_history, delta_u_history, l = newton_OC(x_reference, u_reference, guess="reference", task=2)
+        x_gen, u_gen, GradJ_u_history, delta_u_history, l = newton_OC(x_reference, u_reference, guess="smooth", task=2)
         dm.save_optimal_trajectory(x_gen, u_gen)
         plot_norm_grad_J(GradJ_u_history)
         plot_norm_delta_u(delta_u_history)
