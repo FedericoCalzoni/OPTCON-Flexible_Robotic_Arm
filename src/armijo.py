@@ -4,6 +4,26 @@ from parameters import beta, c, Arm_plot, Arm_plot_up_to_iter_k , Arm_plot_from_
 import dynamics as dyn
 
 def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ, J, Kt, sigma_t, iteration, task=1, step_size_0=0.1):
+    """
+    Perform the Armijo backtracking line search to find an appropriate step size for the optimization.
+
+    Args:
+        x_trajectory (ndarray): Current state trajectory.
+        x_reference (ndarray): Reference state trajectory.
+        u_trajectory (ndarray): Current control trajectory.
+        u_reference (ndarray): Reference control trajectory.
+        delta_u (ndarray): Control update.
+        gradJ (ndarray): Gradient of the cost function.
+        J (float): Current cost function value.
+        Kt (ndarray): Gain matrix for feedback control.
+        sigma_t (ndarray): Scaling factor for the step size.
+        iteration (int): Current iteration number.
+        task (int, optional): Task identifier (default is 1).
+        step_size_0 (float, optional): Initial step size for the search (default is 0.1).
+
+    Returns:
+        float: The step size selected by the Armijo method.
+    """
 
     if task == 1:
         import costTask1 as cost    

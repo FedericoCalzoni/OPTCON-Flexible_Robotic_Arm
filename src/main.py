@@ -8,8 +8,8 @@ from newton_opt_ctrl import plot_optimal_trajectory, plot_norm_grad_J, plot_norm
 import matplotlib.pyplot as plt
 import data_manager as dm
 from mpc import compute_mpc
-from LQR import LQR_system_regulator as LQR
-from LQR import plot_LQR_error
+import mpc
+import LQR
 
 def main():
     print("\n\n\
@@ -20,7 +20,7 @@ def main():
 
     # IMPORTANT: The variable "Task_to_run" make you able to select
     # the tasks to be run. 
-    task_to_run = [1]
+    task_to_run = [4]
 
     #####################################
     ##           Task 1                ##
@@ -81,10 +81,12 @@ def main():
         else:
             if x_gen.shape[1] != pm.TT:
                 raise ValueError("The optimal trajectory is not of the right length.")
-            x_LQR, u_LQR = LQR(x_gen, u_gen)
+            x_LQR, delta_u = LQR.LQR_system_regulator(x_gen, u_gen)
+            u_LQR = u_gen + delta_u
             dm.save_lqr_trajectory(x_LQR, u_LQR)
-            plot_LQR_error(x_LQR, x_gen)
-            
+
+        LQR.plot_trajectories(x_LQR, u_LQR, x_gen, u_gen)
+        LQR.plot_tracking_errors(x_LQR, x_gen, delta_u)
         anim(x_LQR.T, title='LQR Trajectory', speed=int(pm.t_f/10))
 
     #####################################
@@ -100,6 +102,8 @@ def main():
             x_mpc, u_mpc = compute_mpc(x_gen, u_gen)
             dm.save_mpc_trajectory(x_mpc, u_mpc)        
     
+        mpc.plot_trajectories(x_mpc, u_mpc, x_gen, u_gen)
+        mpc.plot_tracking_errors(x_mpc, x_gen, u_mpc, u_gen)
         anim(x_mpc.T, title='MPC Trajectory', speed=int(pm.t_f/10))
 
 if __name__ == "__main__":

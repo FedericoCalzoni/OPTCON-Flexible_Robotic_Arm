@@ -77,6 +77,9 @@ def save_lqr_trajectory(x_LQR, u_LQR):
     _save_file(x_LQR, u_LQR, base_name=file, directory=dir)
 
 def _save_file(*args, base_name, directory):
+    """
+    Saves the arguments to a file with the specified base name and directory.
+    """
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     archive_dir = os.path.join(base_dir, '..', directory)
     os.makedirs(archive_dir, exist_ok=True)
@@ -274,6 +277,9 @@ def load_lqr_trajectory(version = 'latest'):
     return x_lqr, u_lqr
 
 def _load_file(base_name, directory, version = 'latest'):
+    """
+    Loads the file with the specified base name and version from the directory.
+    """
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     archive_dir = os.path.join(base_dir, '..', directory)
     os.makedirs(archive_dir, exist_ok=True)
@@ -283,6 +289,9 @@ def _load_file(base_name, directory, version = 'latest'):
     return vars
 
 def _get_filename_to_load(base_name, directory, version):
+    """
+    Generates the filename to load based on the base name, version, and directory.
+    """
     extension = ".npz"
     file_name_to_load = None
     pattern = rf"{re.escape(base_name)}_v(\d+)_.*{re.escape(extension)}"

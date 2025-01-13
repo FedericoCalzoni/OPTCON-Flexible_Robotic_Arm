@@ -57,11 +57,6 @@ for i in range(len(eq_time)):
         x_ref, u_ref = reference_trajectory.generate_trajectory(
             x_eq[i-1], x_eq[i], u_eq[i-1], u_eq[i], eq_smooth[i-1], eq_time[i]
         )
-        
-    # else:
-    #     x_ref, u_ref = reference_trajectory.generate_trajectory(
-    #         x_eq[i-1], x_eq[i], u_eq[i-1], u_eq[i], eq_smooth[i-1], eq_time[i-1]
-    #     )
     x_ref_list.append(x_ref)
     u_ref_list.append(u_ref)
 

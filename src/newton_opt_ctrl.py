@@ -7,6 +7,34 @@ import armijo as armijo
 from visualizer import animate_double_pendulum as anim
 
 def newton_for_optcon(x_reference, u_reference, guess="step", task=1):
+    """
+    Solves an optimal control problem using the Newton method, refining the input and state trajectories 
+    iteratively to minimize a given cost function.
+
+    Args:
+        x_reference (np.ndarray): Reference trajectory for the state variables, of shape `(x_size, TT)`.
+        u_reference (np.ndarray): Reference trajectory for the input variables, of shape `(u_size, TT)`.
+        guess (str, optional): Initial guess for the optimization. 
+            Options:
+                - "first equilibria": Starts from the first equilibrium point for all time steps.
+                - "reference": Starts from the provided reference trajectory.
+            Defaults to "first equilibria".
+        task (int, optional): Task identifier for loading the corresponding cost module:
+            - `1` for costTask1.
+            - `2` for costTask2.
+            Defaults to 1.
+
+    Returns:
+        tuple:
+            x_optimal (np.ndarray): Optimal state trajectory, of shape `(x_size, TT)`.
+            u_optimal (np.ndarray): Optimal input trajectory, of shape `(u_size, TT)`.
+            GradJ_u_history (list): History of the input gradient (`GradJ_u`) at each iteration.
+            delta_u_history (list): History of the descent direction (`delta_u`) at each iteration.
+            l (np.ndarray): Cost function history over iterations.
+
+    Raises:
+        ValueError: If the `guess` parameter is not "first equilibria" or "reference".
+    """
     
     if task == 1:
         import costTask1 as cost
@@ -125,6 +153,28 @@ def newton_for_optcon(x_reference, u_reference, guess="step", task=1):
     return x_optimal[:,:,k], u_optimal[:,:,k], GradJ_u_history, delta_u_history, l[:k+1]
 
 def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, QT_Star, q, r, qT):
+    """
+    Solves the Affine LQR problem for a given system and reference trajectory.
+
+    Args:
+        x_optimal (np.ndarray): Optimal state trajectory.
+        x_reference (np.ndarray): Reference state trajectory.
+        A (np.ndarray): State transition matrices over time.
+        B (np.ndarray): Control matrices over time.
+        Qt_Star (np.ndarray): State cost matrices over time.
+        Rt_Star (np.ndarray): Control cost matrices over time.
+        St_Star (np.ndarray): State-control coupling cost matrices over time.
+        QT_Star (np.ndarray): Terminal state cost matrix.
+        q (np.ndarray): State cost vectors over time.
+        r (np.ndarray): Control cost vectors over time.
+        qT (np.ndarray): Terminal state cost vector.
+
+    Returns:
+        tuple: 
+            - K (np.ndarray): Feedback gain matrices.
+            - Sigma (np.ndarray): Feedforward terms.
+            - delta_u (np.ndarray): Optimal control deviations.
+    """
     x_size = x_reference.shape[0]
     u_size = r.shape[0]
     TT = x_reference.shape[1]
@@ -184,6 +234,16 @@ def Affine_LQR_solver(x_optimal, x_reference, A, B, Qt_Star, Rt_Star, St_Star, Q
     return K, Sigma, delta_u
 
 def Initial_LQR(x_ref, u_ref):
+    """
+    Computes the initial Linear Quadratic Regulator (LQR) solution in the first iteration of the system.
+
+    Args:
+        x_ref (np.ndarray): Reference state trajectory.
+        u_ref (np.ndarray): Reference control trajectory.
+
+    Returns:
+        np.ndarray: Regulated control trajectory (u_regulator).
+    """
     
     import costTask3 as cost
     
@@ -232,6 +292,20 @@ def Initial_LQR(x_ref, u_ref):
     return u_regulator
 
 def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
+    """
+    Solves the discrete-time Linear Quadratic Regulator (LQR) problem.
+
+    Args:
+        A (np.ndarray): State transition matrices over time.
+        B (np.ndarray): Control matrices over time.
+        Qt_Star (np.ndarray): State cost matrices over time.
+        Rt_Star (np.ndarray): Control cost matrices over time.
+        QT_Star (np.ndarray): Terminal state cost matrix.
+
+    Returns:
+        np.ndarray: Feedback gain matrices (K).
+    """
+    ...
     x_size = A.shape[0]
     u_size = B.shape[1]
     TT = A.shape[2]+1
@@ -263,8 +337,60 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
         K[:,:,t] = Kt
         P[:,:,t] = Pt 
     return K
+
+def first_plot_set(k, x_optimal, x_reference, u_optimal, u_reference, newton_finished):
+    """
+    Plots state and input trajectories during iterations or at completion.
+    """
+    x_size = x_optimal.shape[0]
+    u_size = u_optimal.shape[0]
+    if (pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0) \
+        or (pm.plot_states_at_last_iteration and newton_finished):
+            plt.figure()
+            for i in range(x_size):
+                plt.plot(x_optimal[i, :, k], color = 'blue', label =f'x_optimal[{i+1}]')
+                plt.plot(x_reference[i,:], color = 'orange', label =f'x_reference[{i+1}]')
+            plt.grid()
+            plt.legend()
+            plt.title(f'State Evolution\n$Iteration = {k}$')
+            plt.show()
+
+            plt.figure()
+            for i in range(u_size):
+                plt.plot(u_optimal[i,:,k], color = 'purple', label =f'u_optimal[{i+1}]')
+                plt.plot(u_reference[i,:],color = 'yellow', label =f'u_reference[{i+1}]')
+            plt.grid()
+            plt.legend()
+            plt.title(f'Input Evolution\n$Iteration = {k}$')
+            plt.show()
+            anim(x_optimal[:,:,k].T)
+
+
+
+def second_plot_set(k, sigma_star, delta_u, K_Star):
+    """
+    Visualizes affine LQR solution, including gains and deltas at iteration k.
+    """
+    if pm.Newton_Optcon_Plots and k % pm.Newton_Plot_every_k_iterations== 0:
+            x_size = K_Star.shape[1]
+            u_size = K_Star.shape[0]
+            plt.figure()
+            plt.title(f'Affine LQR solution at\nIteration {k}')
+            for i in range(u_size):
+                plt.plot(sigma_star[i,:, k], color = 'red', label = f'Sigma[{i}]')
+                plt.plot(delta_u[i,:, k], color = 'purple', label = f'Delta_u[{i}]')
+                for j in range(x_size):
+                    plt.plot(K_Star[i, j, :, k], color = 'blue', label = f'K[{i} , {j}]')
+            plt.grid()
+            plt.legend()
+            plt.show()
             
+
+
 def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
+    """
+    Compares reference and optimal trajectories for states and inputs.
+    """
     
     total_time_steps = x_reference.shape[1]
     time = np.linspace(0, total_time_steps - 1, total_time_steps)  
@@ -300,6 +426,9 @@ def plot_optimal_trajectory(x_reference, u_reference, x_gen, u_gen):
     plt.show()
 
 def plot_optimal_intermediate_trajectory(x_reference, u_reference, x_gen, u_gen, k_max):
+    """
+    Plots intermediate optimal trajectories at selected iterations up to k_max.
+    """
     
     total_time_steps = x_reference.shape[1]
     time = np.linspace(0, total_time_steps - 1, total_time_steps) 
@@ -358,7 +487,7 @@ def plot_norm_delta_u(delta_u_history):
     Plot the norm of delta_u at each iteration k in semi-logarithmic scale.
 
     Parameters:
-    delta_u_history (list): List of delta_u matrices for each iteration.
+        delta_u_history (list): List of delta_u matrices for each iteration.
     """
     # Compute the Frobenius norm for each iteration's delta_u matrix
     norms = [np.linalg.norm(delta_u.flatten()) for delta_u in delta_u_history]
@@ -389,7 +518,7 @@ def plot_norm_grad_J(grad_J_history):
     Plot the norm of grad_J at each iteration k in semi-logarithmic scale.
 
     Parameters:
-    grad_J_history (list or np.ndarray): List of grad_J vectors for each iteration.
+        grad_J_history (list or np.ndarray): List of grad_J vectors for each iteration.
     """
     valid_indices = [i for i, grad_J in enumerate(grad_J_history) if np.linalg.norm(grad_J) != 0]
     valid_grad_J_history = [grad_J_history[i] for i in valid_indices]
@@ -423,7 +552,7 @@ def plot_cost_evolution(cost_history):
     Plot the cost value at each iteration k in semi-logarithmic scale to show descent.
 
     Parameters:
-    cost_history (list or np.ndarray): List of cost values for each iteration.
+        cost_history (list or np.ndarray): List of cost values for each iteration.
     """
     iterations = np.arange(len(cost_history)-1)
 
