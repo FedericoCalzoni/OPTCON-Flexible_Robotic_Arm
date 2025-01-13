@@ -1,5 +1,6 @@
 import numpy as np
 from parameters import M1, M2, L1, R1, R2, I1, I2, G, F1, F2, dt
+from numba import jit, njit
 
 F = np.array([[F1, 0],
               [ 0 ,F2]])
@@ -31,6 +32,23 @@ def compute_gravity(theta1, theta2):
     return np.array([[g1], [g2]])
 
 def dynamics(x, u):
+    """
+    Computes the state derivative for a dynamic system based on the current state and control input.
+
+    Args:
+        x (numpy.ndarray): A 4x1 array containing the current state variables:
+                            [dtheta1, dtheta2, theta1, theta2].
+        u (numpy.ndarray): A 1x1 array containing the control input [tau1].
+
+    Returns:
+        numpy.ndarray: A 4x1 array representing the new state after applying the dynamics.
+    
+    Notes:
+        The function computes the system's dynamics using the inertia matrix (M),
+        Coriolis forces (C), and gravity forces (G). The control input is applied
+        to the system, and the resulting state derivative is integrated over time 
+        to obtain the next state.
+    """
 
     dtheta1 = x[0].item()
     dtheta2 = x[1].item()
@@ -80,7 +98,18 @@ def dynamics(x, u):
         
     return x_new
 
+
 def inverse_dynamics(x_precedent, x_actual):
+    """
+    Computes the control input (torque) required to achieve the change in state.
+
+    Args:
+        x_precedent (numpy.ndarray): The state at the previous time step.
+        x_actual (numpy.ndarray): The state at the current time step.
+
+    Returns:
+        numpy.ndarray: The control input (torque) to apply to the system.
+    """
     ddtheta1 = x_actual[0] - x_precedent[0]
     ddtheta2 = x_actual[1] - x_precedent[1]
     dtheta1 = x_actual[0].item()
@@ -102,6 +131,16 @@ def inverse_dynamics(x_precedent, x_actual):
     return u    
 
 def jacobian_gravity(theta1, theta2):
+    """
+    Computes the Jacobian of the gravity forces for a 2-link system.
+
+    Args:
+        theta1 (float): The angle of the first link.
+        theta2 (float): The angle of the second link.
+
+    Returns:
+        numpy.ndarray: A 2x3 matrix representing the Jacobian of the gravity forces.
+    """
     JG_11 = G*M2*R2*np.cos(theta1 + theta2) + G*(L1*M2 + M1*R1)*np.cos(theta1)
     JG_12 = G*M2*R2*np.cos(theta1 + theta2)
     JG_21 = JG_12
@@ -110,7 +149,20 @@ def jacobian_gravity(theta1, theta2):
     JG_23 = 0
     return np.array([[JG_11 , JG_12, JG_13], [JG_21 , JG_22, JG_23]])
 
+@njit
 def jacobian_x_new_wrt_x(x, u):
+    """
+    Computes the Jacobian of the state update with respect to the state variables.
+    
+    Args:
+        x (numpy.ndarray): A 4x1 array containing the current state variables:
+                            [dtheta1, dtheta2, theta1, theta2].
+        u (numpy.ndarray): A 1x1 array containing the control input [tau1].
+    
+    Returns:
+        numpy.ndarray: A 4x4 array representing the Jacobian of the state update 
+        with respect to the state variables.
+    """
     dtheta1 = x[0].item()
     dtheta2 = x[1].item()
     theta1 = x[2].item()
@@ -178,7 +230,20 @@ def jacobian_x_new_wrt_x(x, u):
     dfx[3,3] = 1
     return dfx
 
+@njit
 def jacobian_x_new_wrt_u(x):
+    """
+    Computes the Jacobian of the state update with respect to the control input.
+    
+    Args:
+        x (numpy.ndarray): A 4x1 array containing the current state variables:
+                            [dtheta1, dtheta2, theta1, theta2].
+                            
+    Returns:
+        numpy.ndarray: A 4x1 array representing the Jacobian of the state update
+        with respect to the control input.
+    """
+    
     theta2 = x[3].item()
     # Common Subexpressions:
     tmp0 = pow(R2, 2)
@@ -196,9 +261,19 @@ def jacobian_x_new_wrt_u(x):
 
     return dfu
 
-
-
 def hessian_x_new_wrt_x(x, u):
+    """
+    Computes the Hessian of the state derivative with respect to the state variables.
+    
+    Args:
+        x (numpy.ndarray): A 4x1 array containing the current state variables:
+                            [dtheta1, dtheta2, theta1, theta2].
+        u (numpy.ndarray): A 1x1 array containing the control input [tau1].
+        
+    Returns:
+        numpy.ndarray: A 4x4x4 array representing the Hessian of the state derivative
+        with respect to the state variables.
+    """
     Hxx = np.zeros((4, 4, 4))
     dtheta1 = x[0].item()
     dtheta2 = x[1].item()
@@ -370,10 +445,16 @@ def hessian_x_new_wrt_x(x, u):
     return Hxx
                 
 def hessian_x_new_wrt_u():
+    """
+    Computes the Hessian of the state update with respect to the control input.
+    """
     Huu = np.zeros((4, 1))
     return Huu
 
 def hessian_x_dot_wrt_xu(theta2):
+    """
+    Computes the Hessian of the state update with respect to the state variables and control input.
+    """
     Hxu = np.zeros((4, 4, 4))
     # Common Subexpressions:
     tmp0 = pow(R2, 2)

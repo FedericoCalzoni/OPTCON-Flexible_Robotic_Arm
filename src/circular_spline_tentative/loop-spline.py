@@ -1,6 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline, interp1d
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import parameters as pm 
 from visualizer import animate_double_pendulum as anim
 import data_manager as dm
@@ -76,7 +81,7 @@ def generate_spline():
     y += outer_transition[:, 1].tolist()
 
     # Parameters for circular motion
-    r = 0.7  # Radius of the circular trajectory
+    r = 0.3  # Radius of the circular trajectory
     tf_circle = 1  # Total time for circular motion
     omega = -2 * np.pi / tf_circle  # Angular velocity (rad/s)
     xc = 0  # Center x-coordinate

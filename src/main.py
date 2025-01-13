@@ -9,6 +9,7 @@ from newton_opt_ctrl import plot_optimal_trajectory, plot_norm_grad_J, plot_norm
 import matplotlib.pyplot as plt
 import data_manager as dm
 from mpc import compute_mpc
+import mpc
 from LQR import LQR_system_regulator as LQR
 from LQR import plot_LQR_error
 
@@ -21,7 +22,7 @@ def main():
 
     # IMPORTANT: The variable "Task_to_run" make you able to select
     # the tasks to be run. 
-    task_to_run = [1]
+    task_to_run = [4]
 
     #####################################
     ##           Task 1                ##
@@ -101,6 +102,8 @@ def main():
             x_mpc, u_mpc = compute_mpc(x_gen, u_gen)
             dm.save_mpc_trajectory(x_mpc, u_mpc)        
     
+        mpc.plot_trajectories(x_mpc, u_mpc, x_gen, u_gen)
+        mpc.plot_tracking_errors(x_mpc, x_gen, u_mpc, u_gen)
         anim(x_mpc.T, title='MPC Trajectory', speed=int(pm.t_f/10))
 
 if __name__ == "__main__":

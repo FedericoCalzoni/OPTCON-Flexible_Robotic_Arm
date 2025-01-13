@@ -6,10 +6,26 @@ import costTask4 as cost
 from parameters import (
     T_pred, u_max, u_min, x_dtheta_max, x_dtheta_min,
     x_theta1_max, x_theta1_min, x_theta2_max, x_theta2_min,
-    state_initial_perturbation, noise_sensor, noise_actuator
+    state_initial_perturbation, noise_sensor, noise_actuator, affine_perturbation_mpc
 )
 
 def solver_linear_mpc(A, B, Q, R, x_t, t_start, x_gen, u_gen): 
+    """
+    Solve linear MPC for the prediction horizon starting from x_t at time t_start.
+
+    Args:
+        A (np.ndarray): State transition matrices over time.
+        B (np.ndarray): Control matrices over time.
+        Q (np.ndarray): State cost matrices.
+        R (np.ndarray): Control cost matrices.
+        x_t (np.ndarray): Current state.
+        t_start (int): Current time step.
+        x_gen (np.ndarray): Reference states over the full trajectory.
+        u_gen (np.ndarray): Reference controls over the full trajectory.
+
+    Returns:
+        tuple: Optimal state trajectory, control inputs, and the optimization problem.
+    """
     x_size, u_size, T = B.shape
     
     # Pre-compute reference trajectories for the prediction horizon
@@ -81,6 +97,16 @@ def solver_linear_mpc(A, B, Q, R, x_t, t_start, x_gen, u_gen):
         return None, None, problem
 
 def compute_mpc(x_gen, u_gen):
+    """
+    Compute MPC-based control trajectory.
+
+    Args:
+        x_gen (np.ndarray): Reference state trajectory.
+        u_gen (np.ndarray): Reference control trajectory.
+
+    Returns:
+        tuple: Real state trajectory and control trajectory with noise.
+    """
     x_size = x_gen.shape[0]
     u_size = u_gen.shape[0]
     T = x_gen.shape[1]
@@ -93,7 +119,7 @@ def compute_mpc(x_gen, u_gen):
     x_real_mpc = np.zeros((x_size, T))
     u_real_mpc = np.zeros((u_size, T))
     
-    x_real_mpc[:,0] = x_gen[:,0] * (1 + state_initial_perturbation)
+    x_real_mpc[:,0] = x_gen[:,0] * (1 + state_initial_perturbation) + affine_perturbation_mpc
     
     # Pre-compute system matrices and cost matrices
     for t in range(T-1):

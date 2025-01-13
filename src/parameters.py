@@ -72,7 +72,17 @@ def smooth_transition(start_value, end_value, start_ind, end_ind):
 
 def cost_matrices_computation(Qt_temp, Rt_temp, TT, num_divisions, transition_width):
     """
-    Compute the cost matrices for given divisions and transitions.
+    Computes time-varying cost matrices with multiple divisions and transitions.
+
+    Args:
+        Qt_temp (np.ndarray): Template state cost matrices for transitions.
+        Rt_temp (np.ndarray): Template control cost matrices for transitions.
+        TT (int): Total number of time steps.
+        num_divisions (int): Number of divisions for transitions.
+        transition_width (int): Width of the transition region.
+
+    Returns:
+        tuple: Qt_final (np.ndarray), Rt_final (np.ndarray).
     """
     x_size = Qt_temp.shape[0]
     u_size = Rt_temp.shape[0]
@@ -132,6 +142,18 @@ def spline_transition(t, start, end):
 
 
 def cost_matrices_computation_step(Qt_temp, Rt_temp, transition_width, TT):
+    """
+    Computes time-varying cost matrices with smooth transitions between 3 phases.
+
+    Args:
+        Qt_temp (np.ndarray): Template state cost matrices for each phase.
+        Rt_temp (np.ndarray): Template control cost matrices for each phase.
+        transition_width (int): Width of transition between phases.
+        TT (int): Total number of time steps.
+
+    Returns:
+        tuple: Qt_final (np.ndarray), Rt_final (np.ndarray).
+    """
     # Output matrices
     Qt_final = np.zeros((4, 4, TT))
     Rt_final = np.zeros((1, 1, TT))
@@ -257,12 +279,13 @@ QT_reg = Qt_reg[:, :, -1]
 ##      Task 4 Parameters     ##
 ################################  
 
-state_initial_perturbation = 0.02
+state_initial_perturbation = -0.2
+affine_perturbation_mpc = 0.05
 noise_sensor = 0.05
 noise_actuator = 0.05
 
 # MPC parameters
-T_pred = 5
+T_pred = 10
 u_max = 60
 u_min = -u_max
 x_dtheta_max = 10
@@ -285,8 +308,13 @@ Rt_temp_MPC = np.zeros((1, 1, 3))
 # Qt_temp_MPC[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
 # Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
 
-# # with noise (-0.2, 0.05, 0.05)
-Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
+# # # with noise (-0.2, 0.05, 0.05)
+# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
+# Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
+# Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
+# Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
+
+Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 7000, 5000])  * (1/1.653676929332829) # Constant phase
 Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
 Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
 Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)

@@ -1,5 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from newton_method import newton_method
 import reference_trajectory
 from visualizer import animate_double_pendulum as anim

@@ -8,6 +8,16 @@ import costTask3 as cost
 
 
 def LQR_system_regulator(x_gen, u_gen):
+    """
+    Applies LQR regulation to a system and plots its evolution.
+
+    Args:
+        x_gen (np.ndarray): Generated state trajectory.
+        u_gen (np.ndarray): Generated control trajectory.
+
+    Returns:
+        tuple: x_evolution_after_LQR (np.ndarray), u_regulator (np.ndarray).
+    """
     print('\n\n\
         \t------------------------------------------\n \
         \t\tLaunching: LQR Tracker\n \
@@ -88,6 +98,19 @@ def LQR_system_regulator(x_gen, u_gen):
 
 
 def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
+    """
+    Solves the discrete-time Linear Quadratic Regulator (LQR) problem.
+
+    Args:
+        A (np.ndarray): State transition matrices over time.
+        B (np.ndarray): Control matrices over time.
+        Qt_Star (np.ndarray): State cost matrices over time.
+        Rt_Star (np.ndarray): Control cost matrices over time.
+        QT_Star (np.ndarray): Terminal state cost matrix.
+
+    Returns:
+        np.ndarray: Feedback gain matrices (K).
+    """
     x_size = A.shape[0]
     u_size = B.shape[1]
     TT = A.shape[2]+1
@@ -121,6 +144,13 @@ def LQR_solver(A, B, Qt_Star, Rt_Star, QT_Star):
     return K
 
 def plot_LQR_error(x_LQR, x_gen):
+    """
+    Plots the error between LQR and generated state trajectories.
+
+    Args:
+        x_LQR (np.ndarray): LQR state trajectory.
+        x_gen (np.ndarray): Generated state trajectory.
+    """
     plt.figure()
     for i in range(4):
         plt.plot(x_LQR[i, :], color = 'red', label = f'x_LQR[{0}]' )

@@ -9,9 +9,7 @@ def animate_double_pendulum(x_history, title="Double Pendulum Animation", speed=
 
     Parameters:
         x_history (numpy.ndarray): Array containing the simulation data with shape (T, 4).
-        L1 (float): Length of the first pendulum rod.
-        L2 (float): Length of the second pendulum rod.
-        frame_skip (int): Number of frames to skip in the animation for speed.
+        speed (int): Number to change the speed of the animation.
     """
 
     dt = pm.dt
