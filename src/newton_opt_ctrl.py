@@ -90,7 +90,7 @@ def newton_for_optcon(x_reference, u_reference, guess="step", task=1):
     
     for k in range(max_iterations):
         l[k] = cost.J_Function(x_optimal[:,:,k], u_optimal[:,:,k], x_reference, u_reference, "LQR")
-        
+      
         # Gradient norm stopping criteria
         if k <= 1:
             print(f"\nIteration: {k} \tCost: {l[k]}")
@@ -99,7 +99,7 @@ def newton_for_optcon(x_reference, u_reference, guess="step", task=1):
             print(f"\nIteration: {k} \tCost: {l[k]}\tCost reduction: {l[k] - l[k-1]}\tDelta_u Norm: {norm_delta_u}")
             if norm_delta_u < 1e-3:
                 break
-    
+            
         # Initialization of x0 for the next iteration
         x_optimal[:,0, k+1] = x_reference[:, 0]
         

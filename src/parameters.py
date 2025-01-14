@@ -27,9 +27,9 @@ MPC_trajectory_given = False
 c = 0.5
 beta = 0.7
 arm_max_iter = 100
-Arm_plot = True
-Arm_plot_up_to_iter_k = 3
-Arm_plot_from_iter_k_to_end = 12
+Arm_plot = False
+Arm_plot_up_to_iter_k = 0
+Arm_plot_from_iter_k_to_end = 0
 
 def smooth_transition(start_value, end_value, start_ind, end_ind):
     """
@@ -199,7 +199,7 @@ transition_width = TT_task1/8
 Qt_temp = np.zeros((4, 4, 3))
 Rt_temp = np.zeros((1, 1, 3))
 
-a = 1e-4
+a = 1e6
 Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * a
 Rt_temp[:, :, 0] = np.diag([1]) * 1e-4 * a
 Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1]) *  a
@@ -210,7 +210,6 @@ Rt_temp[:, :, 2] = np.diag([1]) * 1e-4 * a
 # Assign final results
 Qt_task1, Rt_task1 = cost_matrices_computation_step(Qt_temp, Rt_temp, transition_width, TT_task1)
 QT_task1 = Qt_task1[:, :, -1]
-
 
 ######################################
 ##      Task 2 parameters           ##
@@ -314,15 +313,11 @@ Rt_temp_MPC = np.zeros((1, 1, 3))
 # # # with noise (-0.2, 0.05, 0.05)
 Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
 Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
+Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
 Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
+Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
 Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
 
 # Assign final results
 Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, TT, divisions, transition_width_task2)
 QT_MPC = Qt_MPC[:, :, -1]
-
-# from matplotlib import pyplot as plt
-# for i in range(4):
-#     plt.plot(Qt_MPC[i, i, :])
-# plt.plot(Rt_MPC[0, 0, :])
-# plt.show()
