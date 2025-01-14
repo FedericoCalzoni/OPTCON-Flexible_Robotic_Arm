@@ -244,7 +244,7 @@ def plot_tracking_errors(x_real_mpc, x_gen, u_real_mpc, u_gen):
     
     # Create figure with 5 subplots
     fig, axs = plt.subplots(5, 1, figsize=(6, 10))
-    fig.suptitle('State Tracking Errors and Control Input', fontsize=16)
+    fig.suptitle('State and Control Input Tracking Errors', fontsize=16)
     
     # Plot individual state tracking errors
     for i in range(4):
@@ -263,7 +263,7 @@ def plot_tracking_errors(x_real_mpc, x_gen, u_real_mpc, u_gen):
     # Plot control input
     error = (u_real_mpc[0,:] - u_gen[0,:])
     axs[4].plot(time,error, color=colors[4], linestyle='-', linewidth=2,
-                label=f'{names[4]}')
+                label=f'{names[4]} - {names[4]}' + r'$^{ref}$')
     axs[4].set_ylabel(r'Torque (N$\cdot$m)')
     axs[4].set_xlabel(r'Time $t$')
     axs[4].legend()

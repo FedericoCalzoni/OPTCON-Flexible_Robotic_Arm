@@ -62,7 +62,6 @@ def armijo(x_trajectory, x_reference, u_trajectory, u_reference, delta_u, gradJ,
         u_update[:,:] = u_trajectory
         for t in range(horizon-1):
             u_update[:,t] = u_trajectory[:,t] + Kt[:,:,t] @ (x_update[:,t] - x_trajectory[:,t]) + sigma_t[:,t] * step_size
-            u_update[:,t] = np.clip(u_update[:,t], -500, 500)
             x_update[:,t+1] = dyn.dynamics(x_update[:,t].reshape(-1, 1), u_update[:,t].reshape(-1, 1))
 
         J_temp = cost.J_Function(x_update, u_update, x_reference, u_reference, "LQR")
