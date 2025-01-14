@@ -20,15 +20,15 @@ def main():
 
     # IMPORTANT: The variable "Task_to_run" make you able to select
     # the tasks to be run. 
-    task_to_run = [4]
+    task_to_run = [1, 2, 3, 4]
 
     #####################################
     ##           Task 1                ##
     #####################################
     if 1 in task_to_run:
         # Compute two equilibria and make a step transition between them
-        z_0_eq1 = np.array([[-np.pi/2+0.01], [np.pi/2-0.01], [-44]])
-        z_0_eq2 = np.array([[np.pi/2-0.01], [-np.pi/2+0.01], [+44]])
+        z_0_eq1 = np.array([[-np.pi/2+0.01], [np.pi/2-0.01], [-40]])
+        z_0_eq2 = np.array([[np.pi/2-0.01], [-np.pi/2+0.01], [+40]])
         # z_0_eq1 = np.array([[np.pi+np.pi/2.1], [-np.pi/2.1], [-40]])
         # z_0_eq2 = np.array([[np.pi-np.pi/2.1], [+np.pi/2.1], [+40]])
         x_eq0, u_eq0 = newton_method(z_0_eq1)

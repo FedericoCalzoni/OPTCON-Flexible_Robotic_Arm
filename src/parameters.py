@@ -27,9 +27,9 @@ MPC_trajectory_given = False
 c = 0.5
 beta = 0.7
 arm_max_iter = 100
-Arm_plot = True
-Arm_plot_up_to_iter_k = 3
-Arm_plot_from_iter_k_to_end = 12
+Arm_plot = False
+Arm_plot_up_to_iter_k = 0
+Arm_plot_from_iter_k_to_end = 0
 
 def smooth_transition(start_value, end_value, start_ind, end_ind):
     """
@@ -199,7 +199,7 @@ transition_width = TT_task1/8
 Qt_temp = np.zeros((4, 4, 3))
 Rt_temp = np.zeros((1, 1, 3))
 
-a = 1e0
+a = 1e6
 Qt_temp[:, :, 0] = np.diag([1, 1, 1, 1]) * a
 Rt_temp[:, :, 0] = np.diag([1]) * 1e-6 * a
 Qt_temp[:, :, 1] = np.diag([1, 1, 1, 1]) * 0 *  a
@@ -210,12 +210,6 @@ Rt_temp[:, :, 2] = np.diag([1]) * 1e-6 * a
 # Assign final results
 Qt_task1, Rt_task1 = cost_matrices_computation_step(Qt_temp, Rt_temp, transition_width, TT_task1)
 QT_task1 = Qt_task1[:, :, -1]
-
-# from matplotlib import pyplot as plt
-# for i in range(4):
-#     plt.plot(Qt_task1[i, i, :])
-# plt.plot(Rt_task1[0, 0, :])
-# plt.show()
 
 ######################################
 ##      Task 2 parameters           ##
@@ -270,20 +264,10 @@ affine_perturbation = 0.05
 Qt_temp_reg = np.zeros((4, 4, 2))
 Rt_temp_reg = np.zeros((1, 1, 2))
 
-# Qt_temp_reg[:, :, 0] = np.diag([9.99854091, 999.331936, 4909.934141, 10.0133061]) *1e7  # Constant phase
-# Rt_temp_reg[:, :, 0] = np.diag([270.5502102])                                     # Constant phase
-# Qt_temp_reg[:, :, 1] = np.diag([0, 0.620181367, 0, 6.79470332])                   # Transition phase
-# Rt_temp_reg[:, :, 1] = np.diag([296.05527468])
-
 Qt_temp_reg[:, :, 0] = np.diag([10, 10,  10, 10]) *1e6  /1000             # Constant phase
 Rt_temp_reg[:, :, 0] = np.diag([10])*1e3                /1000            # Constant phase
 Qt_temp_reg[:, :, 1] = np.diag([10,10,10,10])*1e2       /1000           # Transition phase
 Rt_temp_reg[:, :, 1] = np.diag([10])*1e2                /1000
-
-# Qt_temp[:, :, 0] = np.diag([10, 10,  8, 8]) * 1e4  # Constant phase
-# Rt_temp[:, :, 0] = np.diag([1]) * 1e3                            # Constant phase
-# Qt_temp[:, :, 1] = np.diag([0.1,0.1,1,1]) * 1e2                  # Transition phase
-# Rt_temp[:, :, 1] = np.diag([1]) * 1e3
 
 Qt_reg, Rt_reg = cost_matrices_computation(Qt_temp_reg, Rt_temp_reg, TT, divisions, transition_width_task2)
 QT_reg = Qt_reg[:, :, -1]
@@ -293,21 +277,22 @@ QT_reg = Qt_reg[:, :, -1]
 ################################  
 
 # case 1:
-state_initial_perturbation = 0.05
-affine_perturbation_mpc = 0.05
-noise_sensor = 0
-noise_actuator = 0
+# state_initial_perturbation = 0.05
+# affine_perturbation_mpc = 0.0
+# noise_sensor = 0
+# noise_actuator = 0
 
 # case 2: 
-# state_initial_perturbation = -0.1
-# affine_perturbation_mpc = 0.05
+state_initial_perturbation = -0.1
+affine_perturbation_mpc = 0.0
+noise_sensor = 0.005
+noise_actuator = 0.005
 
 # Case 3:
 # state_initial_perturbation = -0.2
-# affine_perturbation_mpc = 0.05
-
-noise_sensor = 0
-noise_actuator = 0
+# affine_perturbation_mpc = 0.0
+# noise_sensor = 0.05
+# noise_actuator = 0.05
 
 # MPC parameters
 T_pred = 10
@@ -325,30 +310,11 @@ x_theta2_min = -x_theta2_max
 Qt_temp_MPC = np.zeros((4, 4, 3))
 Rt_temp_MPC = np.zeros((1, 1, 3))
 
-# # Normal
-# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 100, 100])*1e2
-# Rt_temp_MPC[:, :, 0] = np.diag([1]) * 0
-# Qt_temp_MPC[:, :, 1] = np.diag([1, 10, 1, 1])*1e2
-# Rt_temp_MPC[:, :, 1] = np.diag([1]) * 0
-# Qt_temp_MPC[:, :, 2] = np.diag([10, 10, 1000, 10])*1e2
-# Rt_temp_MPC[:, :, 2] = np.diag([1]) * 0
-
 # # # with noise (-0.2, 0.05, 0.05)
-# Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
-# Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
-# Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
-# Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
-
 Qt_temp_MPC[:, :, 0] = np.diag([1, 1, 5000, 5000])  * (1/1.653676929332829) # Constant phase
-Rt_temp_MPC[:, :, 0] = np.diag([0.005]) * (1/44.78666325774839)                                 # Constant phase
+Rt_temp_MPC[:, :, 0] = np.diag([0.001]) * (1/44.78666325774839)                                 # Constant phase
 Qt_temp_MPC[:, :, 1] = np.diag([1, 1, 1000, 1000])                   # Transition phase
-Rt_temp_MPC[:, :, 1] = np.diag([0.005]) * (1/44.78666325774839)
-
-# # with extreme noise
-# Qt_temp_MPC[:, :, 0] = np.diag([100000, 100000, 2000000000, 5000000])  * (1/1.653676929332829) # Constant phase
-# Rt_temp_MPC[:, :, 0] = np.diag([100]) * (1/44.78666325774839)                                 # Constant phase
-# Qt_temp_MPC[:, :, 1] = np.diag([100000, 100000, 2000000000, 5000000])                   # Transition phase
-# Rt_temp_MPC[:, :, 1] = np.diag([100]) * (1/44.78666325774839)
+Rt_temp_MPC[:, :, 1] = np.diag([0.001]) * (1/44.78666325774839)
 
 # Assign final results
 Qt_MPC, Rt_MPC = cost_matrices_computation(Qt_temp_MPC, Rt_temp_MPC, TT, divisions, transition_width_task2)

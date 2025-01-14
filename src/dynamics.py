@@ -1,6 +1,6 @@
 import numpy as np
 from parameters import M1, M2, L1, R1, R2, I1, I2, G, F1, F2, dt
-from numba import jit, njit
+
 
 F = np.array([[F1, 0],
               [ 0 ,F2]])
@@ -149,7 +149,7 @@ def jacobian_gravity(theta1, theta2):
     JG_23 = 0
     return np.array([[JG_11 , JG_12, JG_13], [JG_21 , JG_22, JG_23]])
 
-@njit
+
 def jacobian_x_new_wrt_x(x, u):
     """
     Computes the Jacobian of the state update with respect to the state variables.
@@ -230,7 +230,7 @@ def jacobian_x_new_wrt_x(x, u):
     dfx[3,3] = 1
     return dfx
 
-@njit
+
 def jacobian_x_new_wrt_u(x):
     """
     Computes the Jacobian of the state update with respect to the control input.
