@@ -21,7 +21,7 @@ def main():
 
     # IMPORTANT: The variable "Task_to_run" make you able to select
     # the tasks to be run. 
-    task_to_run = [4]
+    task_to_run = [1, 2, 3, 4]
 
     #####################################
     ##           Task 1                ##
